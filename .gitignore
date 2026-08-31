@@ -1,0 +1,94 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ==============================
+# Virtual Environment
+# ==============================
+
+venv/
+.venv/
+env/
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+# ==============================
+# IDE / Editors
+# ==============================
+
+.vscode/
+.idea/
+
+# ==============================
+# OS Files
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Local Data
+# ==============================
+
+data/documents/*
+data/chroma/*
+data/uploads/*
+
+# Keep folder structure
+!data/documents/.gitkeep
+!data/chroma/.gitkeep
+!data/uploads/.gitkeep
+
+# ==============================
+# Neo4j / Local Database Files
+# ==============================
+
+data/neo4j/
+neo4j/
+*.db
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+
+# ==============================
+# Testing / Coverage
+# ==============================
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==============================
+# Build / Distribution
+# ==============================
+
+build/
+dist/
+*.egg-info/
+
+# ==============================
+# Jupyter
+# ==============================
+
+.ipynb_checkpoints/
+
+# ==============================
+# Temporary Files
+# ==============================
+
+*.tmp
+*.temp
