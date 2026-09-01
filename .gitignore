@@ -92,3 +92,5 @@ dist/
 
 *.tmp
 *.temp
+
+test_neo4j.py
