@@ -1,0 +1,34 @@
+.health-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 0;
+}
+
+.health-flow-stage {
+  display: flex;
+  align-items: center;
+}
+
+.health-flow-node {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  white-space: nowrap;
+}
+
+.health-flow-connector {
+  color: var(--text-tertiary);
+  font-size: var(--text-base);
+  padding: 0 10px;
+}
+
+@media (max-width: 640px) {
+  .health-flow { flex-direction: column; align-items: flex-start; }
+  .health-flow-stage { flex-direction: column; align-items: flex-start; }
+  .health-flow-connector { transform: rotate(90deg); padding: 4px 0 4px 16px; }
+}

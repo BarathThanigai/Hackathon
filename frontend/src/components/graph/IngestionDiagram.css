@@ -1,0 +1,71 @@
+.ingest-diagram {
+  padding: 8px 4px;
+}
+
+.ingest-row-doc {
+  display: flex;
+  margin-bottom: 4px;
+}
+
+.ingest-node {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.ingest-node-doc {
+  color: var(--text-primary);
+  font-weight: 500;
+  border-color: var(--border-strong);
+}
+
+.ingest-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: 14px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border-default);
+}
+
+.ingest-branch {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.ingest-branch-line {
+  width: 16px;
+  height: 1px;
+  background: var(--border-default);
+  margin-right: 10px;
+}
+
+.ingest-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ingest-arrow {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.ingest-node-end.tone-accent {
+  color: var(--accent-9);
+  border-color: rgba(108,142,245,0.4);
+  background: var(--accent-wash);
+}
+
+.ingest-node-end.tone-purple {
+  color: var(--hue-github);
+  border-color: rgba(185,138,240,0.35);
+  background: rgba(185,138,240,0.08);
+}

@@ -1,0 +1,113 @@
+.dash-hero {
+  padding: 12px 0 44px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 40px;
+}
+
+.dash-hero-greeting {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+.dash-hero-question {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  margin-top: 8px;
+  margin-bottom: 28px;
+}
+
+.dash-ask {
+  display: flex;
+  gap: 10px;
+  max-width: 640px;
+}
+
+.dash-ask-input {
+  flex: 1;
+  height: 52px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0 18px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-standard);
+}
+
+.dash-ask-input:focus { border-color: var(--accent-9); }
+.dash-ask-input::placeholder { color: var(--text-tertiary); }
+
+.dash-ask .btn { height: 52px; padding: 0 22px; }
+
+.dash-section {
+  margin-bottom: 44px;
+}
+
+.dash-section-head {
+  margin-bottom: 18px;
+}
+
+.dash-section-head h2 {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dash-section-head p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.dash-metric {
+  padding: 20px;
+}
+
+.dash-metric-value {
+  font-size: var(--text-xl);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dash-metric-skeleton {
+  display: inline-block;
+  width: 34px;
+  height: 22px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+}
+
+.dash-metric-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.dash-decisions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.dash-loading {
+  grid-column: 1 / -1;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  padding: 24px 0;
+}
+
+@media (max-width: 800px) {
+  .dash-metrics { grid-template-columns: repeat(2, 1fr); }
+  .dash-decisions { grid-template-columns: 1fr; }
+  .dash-ask { flex-direction: column; }
+}

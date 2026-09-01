@@ -1,0 +1,29 @@
+.entity-card {
+  padding: 14px 16px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.entity-card-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.entity-card-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.entity-chip {
+  padding: 5px 10px;
+  border-radius: 100px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}

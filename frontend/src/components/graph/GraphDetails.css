@@ -1,0 +1,43 @@
+.graph-details {
+  padding: 22px;
+}
+
+.graph-details-empty p {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.graph-details-eyebrow {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.graph-details-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+}
+
+.graph-details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.graph-details-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.graph-details-value {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}

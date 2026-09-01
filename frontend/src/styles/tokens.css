@@ -1,0 +1,75 @@
+:root {
+  /* --- Surfaces --- */
+  --bg-base: #0a0b0d;
+  --bg-surface: #131418;
+  --bg-elevated: #1a1c21;
+  --bg-elevated-hover: #212328;
+  --bg-inset: #0e0f12;
+
+  /* --- Borders --- */
+  --border-subtle: #212328;
+  --border-default: #2a2d33;
+  --border-strong: #3a3d45;
+
+  /* --- Text --- */
+  --text-primary: #edeef0;
+  --text-secondary: #9a9ca6;
+  --text-tertiary: #6b6d76;
+  --text-disabled: #45474e;
+
+  /* --- Accent: restrained periwinkle. Stands for "connection" --- */
+  --accent-9: #6c8ef5;
+  --accent-10: #5478e0;
+  --accent-dim: #26305c;
+  --accent-wash: #171b2e;
+
+  /* --- Status --- */
+  --success: #3bcf8e;
+  --success-dim: #123526;
+  --warn: #e2a13d;
+  --warn-dim: #3a2a10;
+  --danger: #ef5a5f;
+  --danger-dim: #3a1518;
+
+  /* --- Source-type hues (small, desaturated) --- */
+  --hue-document: #8a97ff;
+  --hue-github: #b98af0;
+  --hue-meeting: #45c9c9;
+
+  /* --- Type --- */
+  --font-ui: 'IBM Plex Sans', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* --- Scale --- */
+  --text-xs: 0.6875rem;   /* 11 */
+  --text-sm: 0.8125rem;   /* 13 */
+  --text-base: 0.9375rem; /* 15 */
+  --text-md: 1.0625rem;   /* 17 */
+  --text-lg: 1.375rem;    /* 22 */
+  --text-xl: 1.75rem;     /* 28 */
+  --text-2xl: 2.25rem;    /* 36 */
+
+  /* --- Radius --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* --- Shadow --- */
+  --shadow-panel: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-pop: 0 12px 40px rgba(0,0,0,0.5);
+
+  /* --- Motion --- */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+
+  --sidebar-w: 236px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
