@@ -40,7 +40,6 @@ Thumbs.db
 # Local Data
 # ==============================
 
-data/documents/*
 data/chroma/*
 data/uploads/*
 
