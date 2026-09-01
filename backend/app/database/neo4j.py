@@ -1,3 +1,5 @@
+import os
+import certifi
 from neo4j import GraphDatabase
 
 from app.config import (
@@ -6,6 +8,9 @@ from app.config import (
     NEO4J_PASSWORD,
 )
 
+# Force Python/OpenSSL to use certifi's CA bundle
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 driver = GraphDatabase.driver(
     NEO4J_URI,
