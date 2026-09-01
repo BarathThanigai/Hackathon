@@ -1,76 +1,105 @@
 from app.database.neo4j import get_session
 
 
-def create_person(name: str):
+ALLOWED_LABELS = {
+    "Person",
+    "Technology",
+    "Service",
+    "Project",
+    "Meeting",
+    "Decision",
+    "PullRequest",
+    "Issue",
+    "Document",
+}
+
+
+ALLOWED_RELATIONSHIPS = {
+    "PROPOSED",
+    "DISCUSSED_IN",
+    "USES",
+    "RELATED_TO",
+    "IMPLEMENTED_BY",
+    "MADE_BY",
+    "WORKED_ON",
+    "CAUSED_BY",
+    "AFFECTS",
+    "MENTIONED_IN",
+}
+
+
+def store_knowledge(knowledge: dict):
+    entities = knowledge.get("entities", [])
+    relationships = knowledge.get("relationships", [])
+
     with get_session() as session:
-        session.run(
+
+        # -------------------------
+        # 1. CREATE ENTITIES
+        # -------------------------
+
+        entity_map = {}
+
+        for entity in entities:
+            entity_id = entity["id"]
+            entity_type = entity["type"]
+            entity_name = entity["name"]
+
+            if entity_type not in ALLOWED_LABELS:
+                continue
+
+            # Store mapping from AI ID -> Neo4j node information
+            entity_map[entity_id] = {
+                "type": entity_type,
+                "name": entity_name,
+            }
+
+            query = f"""
+            MERGE (n:{entity_type} {{name: $name}})
+            SET n.id = $id
             """
-            MERGE (p:Person {name: $name})
-            """,
-            name=name
-        )
 
+            session.run(
+                query,
+                name=entity_name,
+                id=entity_id,
+            )
 
-def create_technology(name: str):
-    with get_session() as session:
-        session.run(
+        # -------------------------
+        # 2. CREATE RELATIONSHIPS
+        # -------------------------
+
+        for relationship in relationships:
+
+            source_id = relationship["source"]
+            relationship_type = relationship["type"]
+            target_id = relationship["target"]
+
+            if relationship_type not in ALLOWED_RELATIONSHIPS:
+                continue
+
+            if source_id not in entity_map:
+                continue
+
+            if target_id not in entity_map:
+                continue
+
+            source = entity_map[source_id]
+            target = entity_map[target_id]
+
+            query = f"""
+            MATCH (a:{source["type"]} {{name: $source_name}})
+            MATCH (b:{target["type"]} {{name: $target_name}})
+            MERGE (a)-[:{relationship_type}]->(b)
             """
-            MERGE (t:Technology {name: $name})
-            """,
-            name=name
-        )
 
+            session.run(
+                query,
+                source_name=source["name"],
+                target_name=target["name"],
+            )
 
-def create_decision(title: str, reason: str = None):
-    with get_session() as session:
-        session.run(
-            """
-            MERGE (d:Decision {title: $title})
-            SET d.reason = $reason
-            """,
-            title=title,
-            reason=reason
-        )
-
-
-def create_meeting(name: str):
-    with get_session() as session:
-        session.run(
-            """
-            MERGE (m:Meeting {name: $name})
-            """,
-            name=name
-        )
-
-
-def create_pull_request(number: str):
-    with get_session() as session:
-        session.run(
-            """
-            MERGE (pr:PullRequest {number: $number})
-            """,
-            number=number
-        )
-
-
-def create_relationship(
-    source_label: str,
-    source_property: str,
-    source_value: str,
-    relationship: str,
-    target_label: str,
-    target_property: str,
-    target_value: str
-):
-    query = f"""
-    MATCH (a:{source_label} {{{source_property}: $source_value}})
-    MATCH (b:{target_label} {{{target_property}: $target_value}})
-    MERGE (a)-[:{relationship}]->(b)
-    """
-
-    with get_session() as session:
-        session.run(
-            query,
-            source_value=source_value,
-            target_value=target_value
-        )
+    return {
+        "entities_created": len(entities),
+        "relationships_created": len(relationships),
+    }

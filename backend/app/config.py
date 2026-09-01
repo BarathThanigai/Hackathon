@@ -21,11 +21,20 @@ MEMORYMAP_AI_BASE_URL = os.getenv(
 
 MEMORYMAP_AI_MODEL = os.getenv(
     "MEMORYMAP_AI_MODEL",
-    "meta/llama-3.1-8b-instruct"
+    "nvidia/nemotron-3.5-lightning-30b-a3b"
 )
 
 MEMORYMAP_AI_TIMEOUT_SECONDS = int(
-    os.getenv("MEMORYMAP_AI_TIMEOUT_SECONDS", "90")
+    os.getenv("MEMORYMAP_AI_TIMEOUT_SECONDS", "180")
+)
+
+# =========================
+# Embedding Configuration
+# =========================
+
+MEMORYMAP_EMBEDDING_MODEL = os.getenv(
+    "MEMORYMAP_EMBEDDING_MODEL",
+    "nvidia/nemotron-3-embed-1b"
 )
 
 
