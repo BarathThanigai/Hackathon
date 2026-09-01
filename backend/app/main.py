@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api.ingestion import router as ingestion_router
 from app.api.query import router as query_router
 from app.database.neo4j import verify_connection
+from app.services.seed_graph import seed_redis_example
 
 app = FastAPI(
     title="MemoryMap API",
@@ -24,6 +25,14 @@ def neo4j_health():
     return {
         "neo4j": "connected" if connected else "disconnected"
     }
+@app.post("/graph/seed")
+def seed_graph():
+    seed_redis_example()
 
+    return {
+        "status": "success",
+        "message": "Redis example added to knowledge graph"
+    }
+    
 app.include_router(ingestion_router)
 app.include_router(query_router)

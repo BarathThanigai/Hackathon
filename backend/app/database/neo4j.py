@@ -6,11 +6,10 @@ from app.config import (
     NEO4J_URI,
     NEO4J_USERNAME,
     NEO4J_PASSWORD,
+    NEO4J_DATABASE,
 )
 
-# Force Python/OpenSSL to use certifi's CA bundle
 os.environ["SSL_CERT_FILE"] = certifi.where()
-os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 driver = GraphDatabase.driver(
     NEO4J_URI,
@@ -18,13 +17,18 @@ driver = GraphDatabase.driver(
 )
 
 
-def verify_connection() -> bool:
+def verify_connection():
     try:
         driver.verify_connectivity()
+        print("Neo4j connected successfully")
         return True
     except Exception as e:
         print(f"NEO4J ERROR: {type(e).__name__}: {e}")
         return False
+
+
+def get_session():
+    return driver.session(database=NEO4J_DATABASE)
 
 
 def close_connection():
