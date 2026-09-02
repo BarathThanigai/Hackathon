@@ -24,7 +24,18 @@ export default function Sources() {
     for (const file of files) {
       const placeholder = { id: `temp-${file.name}`, name: file.name, kind: 'document', status: 'processing', steps: ['Uploaded'] };
       setSources((prev) => [placeholder, ...(prev || [])]);
-      await uploadSource(file);
+      try {
+        const completedSource = await uploadSource(file);
+        setSources((prev) => (prev || []).map((source) => (
+          source.id === placeholder.id ? completedSource : source
+        )));
+      } catch (error) {
+        setSources((prev) => (prev || []).map((source) => (
+          source.id === placeholder.id
+            ? { ...source, status: 'error', steps: ['Uploaded'] }
+            : source
+        )));
+      }
     }
   };
 

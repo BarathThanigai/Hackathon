@@ -22,7 +22,8 @@ collection = client.get_or_create_collection(
 def add_chunks(
     chunks: list[str],
     document_id: str,
-    filename: str
+    filename: str,
+    entity_ids: list[str] | None = None,
 ):
     ids = []
     metadatas = []
@@ -37,7 +38,8 @@ def add_chunks(
             "document_id": document_id,
             "filename": filename,
             "chunk_index": index,
-            "source_type": "document"
+            "source_type": "document",
+            "entity_ids": ",".join(entity_ids or []),
         })
 
     collection.add(

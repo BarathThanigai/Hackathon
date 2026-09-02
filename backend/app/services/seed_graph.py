@@ -1,68 +1,28 @@
-from app.services.graph import (
-    create_person,
-    create_technology,
-    create_decision,
-    create_meeting,
-    create_pull_request,
-    create_relationship,
-)
+from app.services.graph import store_knowledge
 
 
 def seed_redis_example():
-
-    # Nodes
-
-    create_person("Rahul")
-
-    create_technology("Redis")
-
-    create_decision(
-        "Introduce Redis caching",
-        "Reduce repeated database queries and high database load"
-    )
-
-    create_meeting("March Architecture Meeting")
-
-    create_pull_request("428")
-
-    # Relationships
-
-    create_relationship(
-        "Person",
-        "name",
-        "Rahul",
-        "PROPOSED",
-        "Decision",
-        "title",
-        "Introduce Redis caching"
-    )
-
-    create_relationship(
-        "Decision",
-        "title",
-        "Introduce Redis caching",
-        "USES",
-        "Technology",
-        "name",
-        "Redis"
-    )
-
-    create_relationship(
-        "Decision",
-        "title",
-        "Introduce Redis caching",
-        "DISCUSSED_IN",
-        "Meeting",
-        "name",
-        "March Architecture Meeting"
-    )
-
-    create_relationship(
-        "Decision",
-        "title",
-        "Introduce Redis caching",
-        "IMPLEMENTED_BY",
-        "PullRequest",
-        "number",
-        "428"
-    )
+    """Seed the sample graph through the same graph writer as ingestion."""
+    return store_knowledge({
+        "entities": [
+            {"id": "seed-rahul", "type": "Person", "name": "Rahul"},
+            {"id": "seed-redis", "type": "Technology", "name": "Redis"},
+            {
+                "id": "seed-redis-decision",
+                "type": "Decision",
+                "name": "Introduce Redis caching",
+            },
+            {
+                "id": "seed-march-meeting",
+                "type": "Meeting",
+                "name": "March Architecture Meeting",
+            },
+            {"id": "seed-pr-428", "type": "PullRequest", "name": "PR #428"},
+        ],
+        "relationships": [
+            {"source": "seed-rahul", "type": "PROPOSED", "target": "seed-redis-decision"},
+            {"source": "seed-redis-decision", "type": "USES", "target": "seed-redis"},
+            {"source": "seed-redis-decision", "type": "DISCUSSED_IN", "target": "seed-march-meeting"},
+            {"source": "seed-redis-decision", "type": "IMPLEMENTED_BY", "target": "seed-pr-428"},
+        ],
+    })
