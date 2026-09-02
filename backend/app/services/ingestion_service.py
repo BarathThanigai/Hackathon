@@ -33,7 +33,7 @@ def ingest_document(
 
 def create_chunks(
     text: str,
-    chunk_size: int = 1000,
+    chunk_size: int = 4000,
     overlap: int = 200
 ) -> list[str]:
 
