@@ -77,6 +77,8 @@ async def upload_document(
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
 
         if file_path.exists():
             file_path.unlink()

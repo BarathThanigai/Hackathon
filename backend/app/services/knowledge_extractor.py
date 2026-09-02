@@ -1,140 +1,222 @@
 import json
+import re
 
-from app.services.ai_client import generate_text
+from app.services.ai_client import generate_json
+from app.services.knowledge_schema import (
+    ALLOWED_ENTITY_TYPES,
+    ALLOWED_RELATIONSHIP_TYPES,
+    RELATIONSHIP_TYPE_ALIASES,
+)
 
 
 EXTRACTION_PROMPT = """
 You are a knowledge graph extraction API.
 
-Your entire response MUST be exactly ONE valid JSON object.
+Return exactly one minified JSON object:
+{"entities":[...],"relationships":[...]}
 
-DO NOT:
-- explain your answer
-- provide reasoning
-- provide analysis
-- describe your process
-- use markdown
-- use code fences
-- output text before or after the JSON
-- invent entities
-- invent relationships
-- use placeholder examples such as Alice or React
+No markdown, prose, reasoning, code fences, or fields beyond that shape.
 
-Extract only entities and relationships explicitly present in the document.
+Each entity must be exactly:
+{"id":"e1","type":"Type","name":"short source name"}
 
-The JSON structure MUST be:
+Each relationship must be exactly:
+{"source":"e1","type":"RELATED_TO","target":"e2"}
 
-{
-  "entities": [
-    {
-      "id": "unique_id",
-      "type": "Technology",
-      "name": "entity name"
-    }
-  ],
-  "relationships": [
-    {
-      "source": "entity_id",
-      "type": "USES",
-      "target": "entity_id"
-    }
-  ]
-}
+Use short sequential IDs (e1, e2, ...).
+Use concise source names.
+Do not include descriptions.
 
 Allowed entity types:
-Person, Technology, Service, Project, Meeting, Decision, PullRequest, Issue, Document
+Person, Organization, Institution, Technology, Service, Project, Meeting,
+Event, Decision, PullRequest, Issue, Certification, Document
 
 Allowed relationship types:
-PROPOSED, DISCUSSED_IN, USES, RELATED_TO, IMPLEMENTED_BY, MADE_BY, WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN
+PROPOSED, DISCUSSED_IN, USES, RELATED_TO, IMPLEMENTED_BY, MADE_BY,
+WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN, AFFILIATED_WITH, ATTENDED, EARNED
+
+For certifications:
+Person -> EARNED -> Certification
+
+Never use EARNED_BY.
 
 Rules:
 - Extract only explicitly mentioned entities.
 - Extract only relationships explicitly supported by the document.
-- Imports and direct usage of a library can be represented using USES.
-- Reuse the same ID when the same entity appears multiple times.
-- Every relationship source must reference an entity.
-- Every relationship target must reference an entity.
-- Do not invent people, projects, technologies, or relationships.
-- If nothing can be extracted, return:
-{"entities":[],"relationships":[]}
+- Reuse the same ID for the same entity.
+- Every relationship source and target must reference an existing entity.
+- Do not invent entities or relationships.
+- For resumes, prioritize the person, organizations, institutions,
+  substantive projects, certifications, and events.
+- Add Technology only when it is central to demonstrated work or a
+  certification.
+- Do not create an entity for every listed skill or tool.
+- Maximum 40 total entities.
+- Maximum 20 Technology entities.
+- Maximum 60 relationships.
 
-Return ONLY the JSON object.
+If nothing qualifies:
+{"entities":[],"relationships":[]}
 
 DOCUMENT:
 """
 
 
+JSON_FENCE_PATTERN = re.compile(
+    r"```(?:json)?[ \t]*\n(?P<body>[\s\S]*?)\n```",
+    re.IGNORECASE,
+)
+
+
+def _unwrap_json_fence(response: str) -> str:
+    """
+    Accept a single Markdown JSON fence, but reject surrounding prose.
+    """
+    match = JSON_FENCE_PATTERN.fullmatch(response)
+
+    if match:
+        return match.group("body")
+
+    return response
+
+
+def _remove_trailing_commas(response: str) -> str:
+    """
+    Remove commas immediately before ] or } outside JSON strings.
+    """
+
+    normalized = []
+
+    in_string = False
+    escaped = False
+    index = 0
+
+    while index < len(response):
+        char = response[index]
+
+        if in_string:
+            normalized.append(char)
+
+            if escaped:
+                escaped = False
+
+            elif char == "\\":
+                escaped = True
+
+            elif char == '"':
+                in_string = False
+
+            index += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            normalized.append(char)
+            index += 1
+            continue
+
+        if char == ",":
+            next_index = index + 1
+
+            while (
+                next_index < len(response)
+                and response[next_index].isspace()
+            ):
+                next_index += 1
+
+            if (
+                next_index < len(response)
+                and response[next_index] in "]}"
+            ):
+                index += 1
+                continue
+
+        normalized.append(char)
+        index += 1
+
+    return "".join(normalized)
+
+
 def extract_json_object(response: str) -> dict:
     """
-    Extract the first valid JSON object from an AI response.
-    Handles models that incorrectly add reasoning or markdown.
+    Parse a complete JSON response.
+
+    Only narrowly scoped formatting cleanup is allowed:
+    - UTF-8 BOM removal
+    - one Markdown JSON fence
+    - trailing comma removal
+
+    Incomplete or malformed JSON is rejected.
     """
 
-    decoder = json.JSONDecoder()
+    if not isinstance(response, str) or not response.strip():
+        raise ValueError(
+            "AI extraction response must be a non-empty JSON object."
+        )
 
-    # Try to find every possible JSON object start.
-    for index, char in enumerate(response):
+    normalized_response = response.strip().lstrip("\ufeff")
 
-        if char != "{":
-            continue
-
-        try:
-            data, end = decoder.raw_decode(response[index:])
-
-            if isinstance(data, dict):
-                return data
-
-        except json.JSONDecodeError:
-            continue
-
-    raise ValueError(
-        "AI did not return a valid knowledge graph JSON object:\n"
-        + response
+    normalized_response = _unwrap_json_fence(
+        normalized_response
     )
+
+    normalized_response = _remove_trailing_commas(
+        normalized_response
+    )
+
+    try:
+        data = json.loads(normalized_response)
+
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "AI extraction response must contain only valid JSON."
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise ValueError(
+            "AI extraction response must be a JSON object."
+        )
+
+    return data
 
 
 def extract_knowledge(text: str) -> dict:
+    """
+    Extract and validate entities and relationships from document text.
+    """
 
     prompt = EXTRACTION_PROMPT + "\n" + text
 
-    response = generate_text(prompt).strip()
-
-    print("\nRAW AI RESPONSE:")
-    print(response)
+    response = generate_json(prompt).strip()
 
     data = extract_json_object(response)
 
-    # -------------------------
+    # --------------------------------------------------
     # Validate top-level object
-    # -------------------------
+    # --------------------------------------------------
 
-    if set(data.keys()) != {"entities", "relationships"}:
+    if set(data.keys()) != {
+        "entities",
+        "relationships",
+    }:
         raise ValueError(
             "AI response must contain exactly "
-            "'entities' and 'relationships'"
+            "'entities' and 'relationships'."
         )
 
     if not isinstance(data["entities"], list):
-        raise ValueError("'entities' must be a list")
+        raise ValueError(
+            "'entities' must be a list."
+        )
 
     if not isinstance(data["relationships"], list):
-        raise ValueError("'relationships' must be a list")
+        raise ValueError(
+            "'relationships' must be a list."
+        )
 
-    # -------------------------
+    # --------------------------------------------------
     # Validate entities
-    # -------------------------
-
-    allowed_entity_types = {
-        "Person",
-        "Technology",
-        "Service",
-        "Project",
-        "Meeting",
-        "Decision",
-        "PullRequest",
-        "Issue",
-        "Document",
-    }
+    # --------------------------------------------------
 
     entity_ids = set()
 
@@ -145,37 +227,43 @@ def extract_knowledge(text: str) -> dict:
                 f"Invalid entity: {entity}"
             )
 
-        if not all(
-            key in entity
-            for key in ("id", "type", "name")
-        ):
+        if set(entity) != {
+            "id",
+            "type",
+            "name",
+        }:
             raise ValueError(
                 f"Invalid entity structure: {entity}"
             )
 
-        if entity["type"] not in allowed_entity_types:
+        if entity["type"] not in ALLOWED_ENTITY_TYPES:
             raise ValueError(
                 f"Invalid entity type: {entity['type']}"
             )
 
+        if not all(
+            isinstance(entity[key], str)
+            and entity[key].strip()
+            for key in (
+                "id",
+                "type",
+                "name",
+            )
+        ):
+            raise ValueError(
+                f"Invalid entity values: {entity}"
+            )
+
+        if entity["id"] in entity_ids:
+            raise ValueError(
+                f"Duplicate entity ID: {entity['id']}"
+            )
+
         entity_ids.add(entity["id"])
 
-    # -------------------------
+    # --------------------------------------------------
     # Validate relationships
-    # -------------------------
-
-    allowed_relationship_types = {
-        "PROPOSED",
-        "DISCUSSED_IN",
-        "USES",
-        "RELATED_TO",
-        "IMPLEMENTED_BY",
-        "MADE_BY",
-        "WORKED_ON",
-        "CAUSED_BY",
-        "AFFECTS",
-        "MENTIONED_IN",
-    }
+    # --------------------------------------------------
 
     for relationship in data["relationships"]:
 
@@ -184,19 +272,49 @@ def extract_knowledge(text: str) -> dict:
                 f"Invalid relationship: {relationship}"
             )
 
-        if not all(
-            key in relationship
-            for key in ("source", "type", "target")
-        ):
+        if set(relationship) != {
+            "source",
+            "type",
+            "target",
+        }:
             raise ValueError(
                 f"Invalid relationship structure: {relationship}"
             )
 
-        if relationship["type"] not in allowed_relationship_types:
+        if not all(
+            isinstance(relationship[key], str)
+            and relationship[key].strip()
+            for key in (
+                "source",
+                "type",
+                "target",
+            )
+        ):
+            raise ValueError(
+                f"Invalid relationship values: {relationship}"
+            )
+
+        # --------------------------------------------------
+        # Normalize common LLM-generated aliases
+        # --------------------------------------------------
+
+        relationship_type = RELATIONSHIP_TYPE_ALIASES.get(
+            relationship["type"],
+            relationship["type"],
+        )
+
+        if relationship_type not in ALLOWED_RELATIONSHIP_TYPES:
             raise ValueError(
                 f"Invalid relationship type: "
-                f"{relationship['type']}"
+                f"{relationship_type}"
             )
+
+        # Store canonical relationship type.
+        relationship["type"] = relationship_type
+
+        # --------------------------------------------------
+        # Validate relationship references
+        # --------------------------------------------------
 
         if relationship["source"] not in entity_ids:
             raise ValueError(

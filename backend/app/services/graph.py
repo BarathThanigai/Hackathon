@@ -1,31 +1,12 @@
 from app.database.neo4j import get_session
+from app.services.knowledge_schema import (
+    ALLOWED_ENTITY_TYPES,
+    ALLOWED_RELATIONSHIP_TYPES,
+)
 
 
-ALLOWED_LABELS = {
-    "Person",
-    "Technology",
-    "Service",
-    "Project",
-    "Meeting",
-    "Decision",
-    "PullRequest",
-    "Issue",
-    "Document",
-}
-
-
-ALLOWED_RELATIONSHIPS = {
-    "PROPOSED",
-    "DISCUSSED_IN",
-    "USES",
-    "RELATED_TO",
-    "IMPLEMENTED_BY",
-    "MADE_BY",
-    "WORKED_ON",
-    "CAUSED_BY",
-    "AFFECTS",
-    "MENTIONED_IN",
-}
+ALLOWED_LABELS = ALLOWED_ENTITY_TYPES
+ALLOWED_RELATIONSHIPS = ALLOWED_RELATIONSHIP_TYPES
 
 
 def store_knowledge(knowledge: dict):
