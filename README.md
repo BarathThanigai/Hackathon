@@ -1,8 +1,6 @@
-# ChronicleAI
+# Preserving Organizational Knowledge Through AI - Never Lose the Why
 
-## AI-Powered Organizational Memory and Knowledge Graph
-
-ChronicleAI is an AI-powered knowledge management and retrieval platform that transforms unstructured organizational documents into a structured, queryable knowledge base.
+This project is an AI-powered knowledge management and retrieval platform that transforms unstructured organizational documents into a structured, queryable knowledge base.
 
 It combines **LLM-based knowledge extraction, Neo4j knowledge graphs, ChromaDB vector search, and Retrieval-Augmented Generation (RAG)** to allow users to upload documents and ask natural-language questions about the information contained within them.
 
@@ -14,7 +12,7 @@ The system maintains both the semantic content of documents and the relationship
 
 Traditional document search relies primarily on keyword or semantic matching. This can make it difficult to answer questions that depend on relationships between people, projects, technologies, organizations, decisions, and other entities.
 
-ChronicleAI addresses this by maintaining two complementary representations of organizational knowledge:
+This project addresses this by maintaining two complementary representations of organizational knowledge:
 
 - **Neo4j** stores entities and their relationships as a knowledge graph.
 - **ChromaDB** stores document chunks and their vector embeddings for semantic retrieval.
@@ -63,7 +61,7 @@ This creates a hybrid retrieval architecture that combines:
                  │                                 │
                  ▼                                 │
         ┌──────────────────┐                       │
-        │    NVIDIA AI     │                       │
+        │     AI           │                       │
         │ Knowledge        │                       │
         │ Extraction       │                       │
         └────────┬─────────┘                       │
@@ -86,7 +84,7 @@ This creates a hybrid retrieval architecture that combines:
                            │
                            ▼
                   ┌──────────────────┐
-                  │    NVIDIA AI     │
+                  │        AI        │
                   │ Answer Generation│
                   └────────┬─────────┘
                            │
