@@ -5,7 +5,7 @@ import { useProject } from '../../context/ProjectContext';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Overview', icon: '⌂', end: true },
+  { to: '/dashboard', label: 'Overview', icon: '⌂', end: true },
   { to: '/ask', label: 'Ask', icon: '⌕' },
   { to: '/decisions', label: 'Decisions', icon: '◇' },
   { to: '/graph', label: 'Knowledge Graph', icon: '◈' },

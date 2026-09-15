@@ -1,4 +1,7 @@
-"""Shared allow-lists for extracted knowledge and Neo4j storage."""
+"""
+Shared allow-lists for extracted knowledge and Neo4j storage.
+"""
+
 
 ALLOWED_ENTITY_TYPES = {
     "Person",
@@ -15,6 +18,7 @@ ALLOWED_ENTITY_TYPES = {
     "Certification",
     "Document",
 }
+
 
 ALLOWED_RELATIONSHIP_TYPES = {
     "PROPOSED",
@@ -33,7 +37,7 @@ ALLOWED_RELATIONSHIP_TYPES = {
     "PROVIDES",
 }
 
-# Explicit model aliases are normalized before strict relationship validation.
+
 RELATIONSHIP_TYPE_ALIASES = {
     "EARNED_BY": "EARNED",
     "WORKED ON": "WORKED_ON",

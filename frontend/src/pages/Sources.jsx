@@ -35,7 +35,7 @@ export default function Sources() {
         id: `temp-${crypto.randomUUID()}`,
         name: file.name,
         kind: 'document',
-        status: 'processing',
+        status: 'uploading',
         steps: ['Uploaded'],
       };
       addSource(placeholder);

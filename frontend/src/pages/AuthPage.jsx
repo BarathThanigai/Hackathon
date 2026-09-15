@@ -1,7 +1,6 @@
-import { SignIn, SignUp } from '@clerk/clerk-react';
-import AbstractConnection from '../../../src/components/AbstractConnection.tsx';
-import { Logo } from '../../../src/components/ui.tsx';
-import '../../../src/index.css';
+import AbstractConnection from '../components/AbstractConnection';
+import { Logo } from '../components/ui';
+import '../styles/global.css';
 
 export default function AuthPage({ mode }) {
   const isSignIn = mode === 'sign-in';
@@ -20,7 +19,9 @@ export default function AuthPage({ mode }) {
       <section className="flex items-center justify-center bg-ink px-6 py-10 sm:px-10">
         <div className="w-full max-w-[420px]">
           <div className="mb-8 lg:hidden"><Logo /></div>
-          {isSignIn ? <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/app" /> : <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/app" />}
+          <div className="rounded-lg border border-line bg-panel p-6 text-center text-fg">
+            Auth screen is now handled by the unified app. Use the main login flow from the home page.
+          </div>
         </div>
       </section>
     </main>

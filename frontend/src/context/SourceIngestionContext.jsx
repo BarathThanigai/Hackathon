@@ -23,7 +23,10 @@ function readPersistedSources() {
 
     const sourceIds = new Set();
     return parsedSources.filter((source) => (
-      isSourceRecord(source) && !sourceIds.has(source.id) && sourceIds.add(source.id)
+      isSourceRecord(source)
+      && !source.id.startsWith('temp-')
+      && !sourceIds.has(source.id)
+      && sourceIds.add(source.id)
     ));
   } catch {
     return null;
