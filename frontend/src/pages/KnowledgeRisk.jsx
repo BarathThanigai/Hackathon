@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import { fetchRiskAreas } from '../services/api';
+import { fetchRiskAreas, resolveGraphEntity } from '../services/api';
 import './KnowledgeRisk.css';
 
 const LEVEL_META = {
@@ -37,14 +38,16 @@ export default function KnowledgeRisk() {
       <div className="risk-list">
         {areas?.map((area) => {
           const meta = LEVEL_META[area.level];
+
           return (
             <Card key={area.id} className="risk-card">
               <div className="risk-card-head">
                 <Badge tone={meta.tone}>{meta.label}</Badge>
                 <h3>{area.title}</h3>
               </div>
+
               <div className="risk-card-grid">
-                <RiskField label="Primary contributor" value={area.primaryContributor} />
+                <RiskContributor contributor={area.primaryContributor} />
                 <RiskField label="Related commits" value={area.relatedCommits} mono />
                 <RiskField label="Related discussions" value={area.relatedDiscussions} mono />
                 <RiskField label="Documentation coverage" value={area.documentationCoverage} />
@@ -54,6 +57,31 @@ export default function KnowledgeRisk() {
         })}
       </div>
     </PageContainer>
+  );
+}
+
+function RiskContributor({ contributor }) {
+  const entityId = resolveGraphEntity(contributor, 'person');
+
+  if (!entityId) {
+    return (
+      <RiskField
+        label="Primary contributor"
+        value={contributor}
+      />
+    );
+  }
+
+  return (
+    <div className="risk-field">
+      <div className="risk-field-label">Primary contributor</div>
+      <Link
+        className="risk-field-link"
+        to={`/graph?entity=${encodeURIComponent(entityId)}`}
+      >
+        {contributor}
+      </Link>
+    </div>
   );
 }
 
