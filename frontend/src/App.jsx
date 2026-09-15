@@ -4,6 +4,7 @@ import Sidebar from './components/layout/Sidebar';
 import CommandPalette from './components/layout/CommandPalette';
 import DecisionDetailModal from './components/knowledge/DecisionDetailModal';
 import { DecisionModalProvider } from './context/DecisionModalContext';
+import { SourceIngestionProvider } from './context/SourceIngestionContext';
 import Dashboard from './pages/Dashboard';
 import AskMemoryMap from './pages/AskMemoryMap';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
@@ -28,20 +29,22 @@ export default function App() {
   return (
     <BrowserRouter>
       <DecisionModalProvider>
-        <div className="app-shell">
-          <Sidebar />
-          <main className="app-main">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/ask" element={<AskMemoryMap />} />
-              <Route path="/graph" element={<KnowledgeGraphPage />} />
-              <Route path="/sources" element={<Sources />} />
-              <Route path="/risk" element={<KnowledgeRisk />} />
-            </Routes>
-          </main>
-        </div>
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-        <DecisionDetailModal />
+        <SourceIngestionProvider>
+          <div className="app-shell">
+            <Sidebar />
+            <main className="app-main">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/ask" element={<AskMemoryMap />} />
+                <Route path="/graph" element={<KnowledgeGraphPage />} />
+                <Route path="/sources" element={<Sources />} />
+                <Route path="/risk" element={<KnowledgeRisk />} />
+              </Routes>
+            </main>
+          </div>
+          <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+          <DecisionDetailModal />
+        </SourceIngestionProvider>
       </DecisionModalProvider>
     </BrowserRouter>
   );
