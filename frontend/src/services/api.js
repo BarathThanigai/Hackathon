@@ -85,6 +85,32 @@ export async function fetchGraph() {
   return { nodes: graphNodes, edges: graphEdges, details: graphEntityDetails };
 }
 
+export function resolveGraphEntity(label, expectedType) {
+  if (typeof label !== 'string') return null;
+
+  const matches = graphNodes.filter((node) => (
+    node.label === label && (!expectedType || node.type === expectedType)
+  ));
+
+  return matches.length === 1 ? matches[0].id : null;
+}
+
+export function resolveDecision(label) {
+  if (typeof label !== 'string') return null;
+
+  const matchingIds = new Set();
+
+  decisions.forEach((decision) => {
+    if (decision.title === label) matchingIds.add(decision.id);
+  });
+
+  Object.values(decisionDetail).forEach((detail) => {
+    if (detail.title === label) matchingIds.add(detail.id);
+  });
+
+  return matchingIds.size === 1 ? [...matchingIds][0] : null;
+}
+
 export async function fetchSources() {
   await delay(200);
   return sources;
