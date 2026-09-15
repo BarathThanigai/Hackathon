@@ -280,6 +280,11 @@ def extract_knowledge(text: str) -> dict:
                 f"Invalid entity: {entity}"
             )
 
+        # Some model responses use Cypher-style ``:id``. Normalize that
+        # single spelling before enforcing the public extraction schema.
+        if ":id" in entity and "id" not in entity:
+            entity["id"] = entity.pop(":id")
+
         if set(entity) != {
             "id",
             "type",
