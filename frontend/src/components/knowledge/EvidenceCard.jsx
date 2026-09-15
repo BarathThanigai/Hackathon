@@ -6,7 +6,7 @@ const LABEL = { document: 'Document', github: 'GitHub', meeting: 'Meeting' };
 
 export default function EvidenceCard({ index, evidence }) {
   return (
-    <button className="evidence-card">
+    <div className="evidence-card">
       <div className="evidence-card-head">
         <span className="evidence-card-index mono">{index}</span>
         <div className="evidence-card-titles">
@@ -16,6 +16,6 @@ export default function EvidenceCard({ index, evidence }) {
         <Badge tone={TONE[evidence.type] || 'neutral'}>{LABEL[evidence.type] || evidence.type}</Badge>
       </div>
       {evidence.excerpt && <p className="evidence-card-excerpt">&ldquo;{evidence.excerpt}&rdquo;</p>}
-    </button>
+    </div>
   );
 }

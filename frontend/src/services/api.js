@@ -25,6 +25,11 @@ export async function fetchDashboardOverview() {
   return { metrics, recentDecisions: decisions };
 }
 
+export async function fetchDecisions() {
+  await delay(200);
+  return decisions;
+}
+
 function normaliseQueryResponse(question, payload) {
   if (payload.answer && Array.isArray(payload.evidence)) return payload;
 
@@ -66,9 +71,44 @@ export async function fetchDecisionDetail(id) {
   return decisionDetail[id] || null;
 }
 
+export async function fetchDecision(id) {
+  await delay(200);
+  const summary = decisions.find((decision) => decision.id === id);
+  const detail = decisionDetail[id];
+
+  if (!summary && !detail) return null;
+  return { ...summary, ...detail };
+}
+
 export async function fetchGraph() {
   await delay(300);
   return { nodes: graphNodes, edges: graphEdges, details: graphEntityDetails };
+}
+
+export function resolveGraphEntity(label, expectedType) {
+  if (typeof label !== 'string') return null;
+
+  const matches = graphNodes.filter((node) => (
+    node.label === label && (!expectedType || node.type === expectedType)
+  ));
+
+  return matches.length === 1 ? matches[0].id : null;
+}
+
+export function resolveDecision(label) {
+  if (typeof label !== 'string') return null;
+
+  const matchingIds = new Set();
+
+  decisions.forEach((decision) => {
+    if (decision.title === label) matchingIds.add(decision.id);
+  });
+
+  Object.values(decisionDetail).forEach((detail) => {
+    if (detail.title === label) matchingIds.add(detail.id);
+  });
+
+  return matchingIds.size === 1 ? [...matchingIds][0] : null;
 }
 
 export async function fetchSources() {
