@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.ingestion import router as ingestion_router
 from app.api.query import router as query_router
 from app.api.ai_settings import router as ai_settings_router
+from app.api.graph import router as graph_router
 from app.database.neo4j import verify_connection
 from app.services.seed_graph import seed_redis_example
 
@@ -48,3 +49,4 @@ def seed_graph():
 app.include_router(ingestion_router)
 app.include_router(query_router)
 app.include_router(ai_settings_router)
+app.include_router(graph_router)

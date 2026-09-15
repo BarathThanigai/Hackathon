@@ -79,10 +79,10 @@ export function SourceIngestionProvider({ children }) {
     )));
   }, []);
 
-  const failSource = useCallback((sourceId) => {
+  const failSource = useCallback((sourceId, error = 'Ingestion failed') => {
     setSources((currentSources) => (currentSources || []).map((source) => (
       source.id === sourceId
-        ? { ...source, status: 'error', steps: ['Uploaded'] }
+        ? { ...source, status: 'error', error }
         : source
     )));
   }, []);

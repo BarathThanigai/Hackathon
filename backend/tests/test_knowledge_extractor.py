@@ -6,6 +6,7 @@ from app.services.ai_client import ExtractionLimitError, generate_json
 from app import config
 from app.services.graph import ALLOWED_LABELS
 from app.services.knowledge_extractor import extract_json_object, extract_knowledge
+from app.services.ingestion_service import merge_knowledge_chunks
 from app.services.knowledge_schema import ALLOWED_ENTITY_TYPES
 
 
@@ -85,6 +86,23 @@ class KnowledgeExtractorTests(unittest.TestCase):
         self.assertEqual(knowledge["entities"][1]["type"], "Organization")
         self.assertEqual(len(knowledge["relationships"]), 3)
 
+    @patch("app.services.knowledge_extractor.generate_json")
+    def test_normalizes_name_based_provider_output(self, mock_generate_json):
+        mock_generate_json.return_value = json.dumps({
+            "entities": [
+                {"name": "Thasshien", "type": "Person"},
+                {"name": "Language Agnostic Chatbot", "type": "Project"},
+            ],
+            "relationships": [
+                {"source": "Thasshien", "type": "worked on", "target": "Language Agnostic Chatbot"},
+            ],
+        })
+
+        knowledge = extract_knowledge("Thasshien worked on a language agnostic chatbot project.")
+
+        self.assertEqual(knowledge["entities"][0]["id"], "e1")
+        self.assertEqual(knowledge["relationships"], [{"source": "e1", "type": "WORKED_ON", "target": "e2"}])
+
     @patch("app.services.ai_client.requests.Session")
     def test_generate_json_requests_json_mode_and_no_thinking(self, mock_session):
         mock_post = mock_session.return_value.post
@@ -147,6 +165,30 @@ class KnowledgeExtractorTests(unittest.TestCase):
     def test_graph_storage_uses_the_same_entity_allow_list(self):
         self.assertIs(ALLOWED_LABELS, ALLOWED_ENTITY_TYPES)
         self.assertTrue({"Organization", "Institution", "Event", "Certification"} <= ALLOWED_LABELS)
+
+    @patch("app.services.ingestion_service.extract_knowledge")
+    def test_merges_bounded_knowledge_chunks(self, mock_extract):
+        mock_extract.side_effect = [
+            {
+                "entities": [
+                    {"id": "e1", "type": "Person", "name": "Ada"},
+                    {"id": "e2", "type": "Project", "name": "Compiler"},
+                ],
+                "relationships": [{"source": "e1", "type": "WORKED_ON", "target": "e2"}],
+            },
+            {
+                "entities": [
+                    {"id": "e1", "type": "Person", "name": "Ada"},
+                    {"id": "e2", "type": "Technology", "name": "Python"},
+                ],
+                "relationships": [],
+            },
+        ]
+
+        knowledge = merge_knowledge_chunks(["first", "second"])
+
+        self.assertEqual(len(knowledge["entities"]), 3)
+        self.assertEqual(knowledge["relationships"], [{"source": "e1", "type": "WORKED_ON", "target": "e2"}])
 
 
 if __name__ == "__main__":

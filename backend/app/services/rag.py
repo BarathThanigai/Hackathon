@@ -1,6 +1,7 @@
 """Grounded retrieval-augmented generation for MemoryMap queries."""
 
 import re
+from datetime import datetime
 
 from app.services.ai_client import generate_text
 from app.services.graph_retrieval import search_graph_by_id
@@ -12,6 +13,29 @@ MAX_CONTEXT_CHARS = 14_000
 MAX_GRAPH_RECORDS = 20
 MAX_EVIDENCE_CHARS = 800
 STOP_WORDS = {"what", "when", "where", "which", "this", "that", "from", "with", "does", "have", "about"}
+SUBSTANTIVE_ENTITY_TYPES = {
+    "person",
+    "organization",
+    "institution",
+    "technology",
+    "decision",
+    "pullrequest",
+    "project",
+    "meeting",
+}
+NEAR_DUPLICATE_THRESHOLD = 0.75
+RECENCY_METADATA_KEYS = ("ingested_at", "modified_at", "updated_at", "created_at")
+_VERSION_SUFFIX_PATTERN = re.compile(
+    r"\s*[\(\[](?:old|copy|draft|final|backup|v\d+|\d+)[\)\]]\s*$",
+    re.IGNORECASE,
+)
+TIMELINE_RELATIONSHIPS = {
+    "PROPOSED",
+    "DISCUSSED_IN",
+    "IMPLEMENTED_BY",
+    "CAUSED_BY",
+    "ATTENDED",
+}
 
 
 def extract_entity_ids(documents: list[dict]) -> list[str]:
@@ -37,7 +61,12 @@ def _retrieve_graph_context(entity_ids: list[str]) -> list[dict]:
             break
         if len(records) >= MAX_GRAPH_RECORDS:
             break
-    return records[:MAX_GRAPH_RECORDS]
+    return [
+        record
+        for record in records
+        if not _is_generic_entity(record.get("entity") or {}, record.get("entity_labels"))
+        and not _is_generic_entity(record.get("connected_entity") or {}, record.get("connected_labels"))
+    ][:MAX_GRAPH_RECORDS]
 
 
 def _relevant_documents(documents: list[dict]) -> list[dict]:
@@ -54,9 +83,99 @@ def _relevant_documents(documents: list[dict]) -> list[dict]:
     return relevant or [min(scored, key=lambda document: document["distance"])]
 
 
+def _normalize_source_key(value: str) -> str:
+    normalized = value.strip().lower().rsplit("/", 1)[-1]
+    stem, separator, extension = normalized.rpartition(".")
+    if not separator:
+        return _VERSION_SUFFIX_PATTERN.sub("", normalized).strip()
+    stem = _VERSION_SUFFIX_PATTERN.sub("", stem).strip()
+    return f"{stem}.{extension}"
+
+
+def _source_key(metadata: dict, document: dict) -> str:
+    repo = metadata.get("repo")
+    file_path = metadata.get("file")
+    stable_id = metadata.get("document_id") or metadata.get("source_id")
+    if repo and file_path:
+        return f"{str(repo).strip().lower()}:{_normalize_source_key(str(file_path))}"
+    raw = stable_id or metadata.get("filename") or document.get("id", "")
+    return _normalize_source_key(str(raw))
+
+
+def _deduplicate_by_source(documents: list[dict]) -> list[dict]:
+    """Keep the most relevant retrieved chunk for each source file."""
+    deduplicated = []
+    seen = set()
+    for document in documents:
+        key = _source_key(document.get("metadata", {}), document)
+        if key and key in seen:
+            continue
+        if key:
+            seen.add(key)
+        deduplicated.append(document)
+    return deduplicated
+
+
+def _content_tokens(text: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
+
+
+def _content_similarity(first: str, second: str) -> float:
+    first_tokens = _content_tokens(first)
+    second_tokens = _content_tokens(second)
+    if not first_tokens or not second_tokens:
+        return 0.0
+    return len(first_tokens & second_tokens) / min(len(first_tokens), len(second_tokens))
+
+
+def _recency(metadata: dict) -> float:
+    for key in RECENCY_METADATA_KEYS:
+        value = metadata.get(key)
+        if value:
+            try:
+                return datetime.fromisoformat(str(value)).timestamp()
+            except ValueError:
+                continue
+    return float("-inf")
+
+
+def _drop_near_duplicates(documents: list[dict]) -> list[dict]:
+    kept = []
+    for document in documents:
+        duplicate = next(
+            (
+                existing
+                for existing in kept
+                if _content_similarity(document.get("text", ""), existing.get("text", "")) >= NEAR_DUPLICATE_THRESHOLD
+            ),
+            None,
+        )
+        if duplicate is None:
+            kept.append(document)
+        elif _recency(document.get("metadata", {})) > _recency(duplicate.get("metadata", {})):
+            kept[kept.index(duplicate)] = document
+    return kept
+
+
+def _lexically_relevant(documents: list[dict], query: str) -> list[dict]:
+    terms = _query_terms(query)
+    if not terms:
+        return documents
+    matching = [
+        document
+        for document in documents
+        if any(term in document.get("text", "").lower() for term in terms)
+    ]
+    return matching or documents
+
+
 def build_context(query: str, n_results: int = MAX_DOCUMENTS) -> tuple[str, list[dict], list[dict]]:
-    documents = retrieve_documents(query, n_results=max(1, min(n_results, MAX_DOCUMENTS)))
+    limit = max(1, min(n_results, MAX_DOCUMENTS))
+    documents = retrieve_documents(query, n_results=limit * 2)
     documents = _relevant_documents(documents)
+    documents = _lexically_relevant(documents, query)
+    documents = _deduplicate_by_source(documents)
+    documents = _drop_near_duplicates(documents)[:limit]
     graph_records = _retrieve_graph_context(extract_entity_ids(documents))
 
     parts = []
@@ -112,12 +231,7 @@ def _evidence(documents: list[dict], query: str) -> list[dict]:
     seen_sources = set()
     for document in documents:
         metadata = document.get("metadata", {})
-        source_id = (
-            metadata.get("document_id")
-            or (metadata.get("repo") and metadata.get("file"))
-            or metadata.get("filename")
-            or document.get("id")
-        )
+        source_id = _source_key(metadata, document)
         if source_id in seen_sources:
             continue
         seen_sources.add(source_id)
@@ -143,6 +257,17 @@ def _entity_name(entity: dict) -> str:
     return entity.get("name") or entity.get("title") or entity.get("number") or entity.get("id") or "Unknown"
 
 
+def _entity_types(entity: dict, labels=None) -> list[str]:
+    values = labels or entity.get("labels") or entity.get("type") or entity.get("entity_type") or []
+    if isinstance(values, str):
+        values = [values]
+    return [str(value).strip().casefold() for value in values if value]
+
+
+def _is_generic_entity(entity: dict, labels=None) -> bool:
+    return not entity or not any(entity_type in SUBSTANTIVE_ENTITY_TYPES for entity_type in _entity_types(entity, labels))
+
+
 def _timeline(graph_records: list[dict]) -> list[dict]:
     """Build factual context steps from stored graph relationships."""
     steps = []
@@ -151,7 +276,11 @@ def _timeline(graph_records: list[dict]) -> list[dict]:
         entity = record.get("entity") or {}
         connected = record.get("connected_entity") or {}
         relationship = record.get("relationship")
-        if not entity or not connected or not relationship:
+        if (
+            not entity
+            or not connected
+            or relationship not in TIMELINE_RELATIONSHIPS
+        ):
             continue
         names = (_entity_name(entity), _entity_name(connected))
         key = (frozenset(names), relationship)
