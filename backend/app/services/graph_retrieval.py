@@ -43,7 +43,7 @@ def search_graph(entity_name: str):
 
         return records
 
-def search_graph_by_id(entity_id: str):
+def search_graph_by_id(entity_id: str, limit: int = 200):
     """
     Find a Neo4j entity using its knowledge-extraction ID
     and return its directly connected entities/relationships.
@@ -59,12 +59,14 @@ def search_graph_by_id(entity_id: str):
         type(r) AS relationship,
         labels(connected) AS connected_labels,
         properties(connected) AS connected_entity
+    LIMIT $limit
     """
 
     with get_session() as session:
         result = session.run(
             query,
-            entity_id=entity_id
+            entity_id=entity_id,
+            limit=max(1, limit),
         )
 
         records = []
