@@ -22,7 +22,22 @@ class RagServiceTests(unittest.TestCase):
         self.assertTrue(result["evidenceBacked"])
         self.assertEqual(result["answer"], "Redis reduced repeated database reads.")
         self.assertEqual(result["evidence"][0]["title"], "decision.md")
-        self.assertEqual(result["timeline"][0]["citation"], "Lines 1-1")
+        self.assertEqual(result["timeline"], [])
+
+    @patch("app.services.rag.search_graph_by_id", return_value=[])
+    @patch("app.services.rag.generate_text", side_effect=["Here", "Here"])
+    @patch("app.services.rag.retrieve_documents")
+    def test_replaces_placeholder_answers(self, mock_retrieve, _mock_generate, _mock_graph):
+        mock_retrieve.return_value = [{
+            "id": "source-1",
+            "text": "The project used React and MediaPipe.",
+            "metadata": {"filename": "README.md"},
+        }]
+
+        result = answer_query("What project was this part of?")
+
+        self.assertEqual(result["answer"], "I could not produce a grounded answer from the indexed evidence.")
+        self.assertEqual(result["timeline"], [])
 
     @patch("app.services.rag.search_graph_by_id")
     @patch("app.services.rag.generate_text", return_value="Redis answer")

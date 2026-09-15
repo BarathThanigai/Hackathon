@@ -164,21 +164,6 @@ def _timeline(graph_records: list[dict]) -> list[dict]:
     return steps
 
 
-def _document_timeline(documents: list[dict], query: str) -> list[dict]:
-    steps = []
-    for document in documents:
-        metadata = document.get("metadata", {})
-        source = metadata.get("file") or metadata.get("filename") or "Indexed source"
-        excerpt, line_start, line_end = _relevant_excerpt(document.get("text", ""), query, 220)
-        if excerpt:
-            summary = " ".join(excerpt.split())
-            steps.append({
-                "label": f"{source}: {summary}",
-                "citation": f"Lines {line_start}-{line_end}",
-            })
-    return steps
-
-
 def _related(graph_records: list[dict]) -> dict[str, list[str]]:
     related = {"people": [], "technologies": [], "decisions": [], "pullRequests": []}
     type_map = {
@@ -223,19 +208,21 @@ EVIDENCE:
 QUESTION: {query}
 ANSWER:"""
     answer = _clean_answer(generate_text(prompt))
-    # A similarity score is a retrieval artifact, never a valid user answer.
-    if _is_similarity_score(answer):
+    # A similarity score or placeholder is never a valid user answer.
+    if _is_invalid_answer(answer):
         answer = _clean_answer(generate_text(
             "Return a plain-language answer to the question using the evidence below. "
             "Return only the final answer, with no reasoning, labels, scores, or document indexes.\n\n"
             f"EVIDENCE:\n{context}\n\nQUESTION: {query}\nANSWER:"
         ))
+    if _is_invalid_answer(answer):
+        answer = "I could not produce a grounded answer from the indexed evidence."
     return {
         "question": query,
         "answer": answer,
         "evidenceBacked": True,
         "evidence": evidence,
-        "timeline": _timeline(graph_records) or _document_timeline(documents, query),
+        "timeline": _timeline(graph_records),
         "related": _related(graph_records),
         "graph_records_used": len(graph_records),
     }
@@ -251,6 +238,15 @@ def _is_similarity_score(answer: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _is_invalid_answer(answer: str) -> bool:
+    normalized = " ".join(answer.strip().lower().split())
+    return (
+        _is_similarity_score(answer)
+        or normalized in {"here", "answer", "response", "n/a", "none"}
+        or len(normalized.split()) < 3
+    )
 
 
 def _clean_answer(answer: str) -> str:
