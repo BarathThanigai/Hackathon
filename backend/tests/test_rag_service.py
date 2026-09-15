@@ -89,3 +89,52 @@ class RagServiceTests(unittest.TestCase):
         result = answer_query("What projects did Thasshien work on?")
 
         self.assertEqual([item["id"] for item in result["evidence"]], ["best"])
+
+    @patch("app.services.rag.search_graph_by_id")
+    @patch("app.services.rag.generate_text", return_value="Redis answer")
+    @patch("app.services.rag.retrieve_documents")
+    def test_filters_graph_neighbors_to_evidence_entities(self, mock_retrieve, _mock_generate, mock_graph):
+        mock_retrieve.return_value = [{
+            "id": "decision",
+            "text": "Rahul proposed Redis to reduce authentication database load.",
+            "metadata": {"filename": "decision.md", "entity_ids": "redis"},
+        }]
+        mock_graph.return_value = [
+            {
+                "entity_labels": ["Technology"],
+                "entity": {"id": "redis", "name": "Redis"},
+                "relationship": "PROPOSED",
+                "connected_labels": ["Person"],
+                "connected_entity": {"id": "rahul", "name": "Rahul"},
+            },
+            {
+                "entity_labels": ["Technology"],
+                "entity": {"id": "redis", "name": "Redis"},
+                "relationship": "USES",
+                "connected_labels": ["Technology"],
+                "connected_entity": {"id": "postgresql", "name": "PostgreSQL"},
+            },
+            {
+                "entity_labels": ["Person"],
+                "entity": {"id": "thasshien", "name": "Thasshien"},
+                "relationship": "ATTENDED",
+                "connected_labels": ["Institution"],
+                "connected_entity": {"id": "vit", "name": "Vellore Institute of Technology"},
+            },
+            {
+                "entity_labels": ["Organization"],
+                "entity": {"id": "backend", "name": "Backend Service"},
+                "relationship": "USES",
+                "connected_labels": ["Technology"],
+                "connected_entity": {"id": "mongodb", "name": "MongoDB"},
+            },
+        ]
+
+        result = answer_query("Why was Redis introduced?")
+
+        self.assertEqual(
+            [step["label"] for step in result["timeline"]],
+            ["Redis proposed Rahul"],
+        )
+        self.assertEqual(result["related"]["people"], ["Rahul"])
+        self.assertEqual(result["related"]["technologies"], ["Redis", "PostgreSQL"])
