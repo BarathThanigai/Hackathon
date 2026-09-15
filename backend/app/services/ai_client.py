@@ -57,12 +57,17 @@ def _generate_completion(
         # Keep reasoning out of the model content returned to ingestion.
         payload["chat_template_kwargs"] = {"enable_thinking": False}
 
+    # The development environment may set HTTP(S)_PROXY to a local proxy that
+    # is not running. NVIDIA requests need a direct HTTPS connection.
+    session = requests.Session()
+    session.trust_env = False
+
     try:
-        response = requests.post(
+        response = session.post(
             url,
             headers=headers,
             json=payload,
-            timeout=(10, 180),
+            timeout=(10, config.MEMORYMAP_AI_TIMEOUT_SECONDS),
         )
 
     except requests.exceptions.Timeout as exc:

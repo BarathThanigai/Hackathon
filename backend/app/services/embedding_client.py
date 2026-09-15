@@ -17,7 +17,11 @@ def generate_embedding(text: str) -> list[float]:
         "input_type": "query",
     }
 
-    response = requests.post(
+    # Avoid inheriting a broken local HTTP(S) proxy from the shell.
+    session = requests.Session()
+    session.trust_env = False
+
+    response = session.post(
         url,
         headers=headers,
         json=payload,
