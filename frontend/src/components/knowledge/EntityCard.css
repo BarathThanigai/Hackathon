@@ -27,3 +27,13 @@
   font-size: var(--text-sm);
   color: var(--text-primary);
 }
+
+.entity-chip-link {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.entity-chip-link:hover {
+  border-color: var(--accent-9);
+  color: var(--accent-9);
+}
