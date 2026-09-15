@@ -1,116 +1,264 @@
-from app.services.retrieval import retrieve_documents
-from app.services.graph_retrieval import search_graph_by_id
+"""Grounded retrieval-augmented generation for MemoryMap queries."""
+
+import re
+
 from app.services.ai_client import generate_text
+from app.services.graph_retrieval import search_graph_by_id
+from app.services.retrieval import retrieve_documents
 
 
-def extract_entity_ids(documents):
-    """
-    Extract Neo4j entity IDs from ChromaDB metadata.
-    """
+MAX_DOCUMENTS = 5
+MAX_CONTEXT_CHARS = 14_000
+MAX_GRAPH_RECORDS = 20
+MAX_EVIDENCE_CHARS = 800
+STOP_WORDS = {"what", "when", "where", "which", "this", "that", "from", "with", "does", "have", "about"}
 
-    entity_ids = set()
 
+def extract_entity_ids(documents: list[dict]) -> list[str]:
+    entity_ids = []
     for document in documents:
-        metadata = document.get("metadata", {})
-
-        ids = metadata.get("entity_ids", "")
-
-        if not ids:
-            continue
-
-        for entity_id in ids.split(","):
+        values = document.get("metadata", {}).get("entity_ids", "")
+        for entity_id in values.split(","):
             entity_id = entity_id.strip()
-
-            if entity_id:
-                entity_ids.add(entity_id)
-
-    return list(entity_ids)
+            if entity_id and entity_id not in entity_ids:
+                entity_ids.append(entity_id)
+    return entity_ids
 
 
-def build_context(query: str):
-
-    # --------------------------------
-    # 1. ChromaDB semantic retrieval
-    # --------------------------------
-
-    documents = retrieve_documents(
-        query=query,
-        n_results=3
-    )
-
-    # --------------------------------
-    # 2. Get Neo4j entity IDs from
-    #    ChromaDB metadata
-    # --------------------------------
-
-    entity_ids = extract_entity_ids(documents)
-
-    print("\nENTITY IDS FROM CHROMADB:")
-    print(entity_ids)
-
-    # --------------------------------
-    # 3. Retrieve graph context
-    # --------------------------------
-
-    graph_results = []
-
+def _retrieve_graph_context(entity_ids: list[str]) -> list[dict]:
+    records = []
+    # Graph context is optional: an unavailable graph must not block answers
+    # grounded in the local vector index.
     for entity_id in entity_ids:
+        try:
+            records.extend(search_graph_by_id(entity_id))
+        except Exception:
+            # Do not retry every entity when the graph service itself is down.
+            break
+        if len(records) >= MAX_GRAPH_RECORDS:
+            break
+    return records[:MAX_GRAPH_RECORDS]
 
-        results = search_graph_by_id(entity_id)
 
-        graph_results.extend(results)
+def _relevant_documents(documents: list[dict]) -> list[dict]:
+    """Keep documents that are meaningfully close to the best semantic hit."""
+    scored = [document for document in documents if isinstance(document.get("distance"), (int, float))]
+    if not scored:
+        return documents
 
-    # --------------------------------
-    # 4. Build combined context
-    # --------------------------------
+    best_distance = min(document["distance"] for document in scored)
+    # Chroma's default L2 distance is corpus-dependent. A relative margin
+    # preserves strong neighbours while rejecting distant, unrelated sources.
+    max_distance = best_distance + max(0.25, best_distance * 0.35)
+    relevant = [document for document in documents if document.get("distance") is None or document["distance"] <= max_distance]
+    return relevant or [min(scored, key=lambda document: document["distance"])]
 
-    context_parts = []
 
-    context_parts.append("DOCUMENT CONTEXT:")
+def build_context(query: str, n_results: int = MAX_DOCUMENTS) -> tuple[str, list[dict], list[dict]]:
+    documents = retrieve_documents(query, n_results=max(1, min(n_results, MAX_DOCUMENTS)))
+    documents = _relevant_documents(documents)
+    graph_records = _retrieve_graph_context(extract_entity_ids(documents))
 
-    for document in documents:
-        context_parts.append(document["text"])
+    parts = []
+    used_chars = 0
+    for index, document in enumerate(documents, start=1):
+        metadata = document.get("metadata", {})
+        source = metadata.get("filename") or metadata.get("file") or "Indexed source"
+        remaining = MAX_CONTEXT_CHARS - used_chars
+        if remaining <= 0:
+            break
+        text, line_start, line_end = _relevant_excerpt(document.get("text", ""), query, remaining)
+        parts.append(f"[Document {index}: {source}, lines {line_start}-{line_end}]\n{text}")
+        used_chars += len(text)
 
-    context_parts.append("\nGRAPH CONTEXT:")
-
-    for item in graph_results:
-
-        context_parts.append(
-            f"Entity: {item['entity']}\n"
-            f"Relationship: {item['relationship']}\n"
-            f"Connected Entity: {item['connected_entity']}"
+    for record in graph_records:
+        entity = record.get("entity", {})
+        connected = record.get("connected_entity", {})
+        relation = record.get("relationship") or "RELATED_TO"
+        parts.append(
+            "[Graph relationship]\n"
+            f"{entity.get('name', entity.get('id', 'Unknown'))} {relation} "
+            f"{connected.get('name', connected.get('id', 'Unknown'))}"
         )
 
-    return "\n\n".join(context_parts)
+    return "\n\n".join(parts), documents, graph_records
 
 
-def answer_query(query: str):
+def _query_terms(query: str) -> list[str]:
+    return [term for term in re.findall(r"[a-z0-9][a-z0-9+#.-]+", query.lower()) if len(term) > 2 and term not in STOP_WORDS]
 
-    context = build_context(query)
 
-    prompt = f"""
-You are an organizational knowledge assistant.
+def _relevant_excerpt(text: str, query: str, max_chars: int = MAX_EVIDENCE_CHARS) -> tuple[str, int, int]:
+    lines = text.strip().splitlines() or [""]
+    terms = _query_terms(query)
+    scores = [sum(line.lower().count(term) for term in terms) for line in lines]
+    best_index = max(range(len(lines)), key=lambda index: scores[index]) if lines else 0
+    if not terms or scores[best_index] == 0:
+        best_index = 0
+    start = max(0, best_index - 1)
+    end = min(len(lines), best_index + 2)
+    excerpt = "\n".join(lines[start:end]).strip()
+    while len(excerpt) > max_chars and end - start > 1:
+        if start < best_index:
+            start += 1
+        else:
+            end -= 1
+        excerpt = "\n".join(lines[start:end]).strip()
+    return excerpt[:max_chars], start + 1, end
 
-Answer the user's question using ONLY the provided context.
 
-Do not invent information.
+def _evidence(documents: list[dict], query: str) -> list[dict]:
+    evidence = []
+    seen_sources = set()
+    for document in documents:
+        metadata = document.get("metadata", {})
+        source_id = (
+            metadata.get("document_id")
+            or (metadata.get("repo") and metadata.get("file"))
+            or metadata.get("filename")
+            or document.get("id")
+        )
+        if source_id in seen_sources:
+            continue
+        seen_sources.add(source_id)
+        source_type = metadata.get("source_type", "document")
+        title = metadata.get("file") or metadata.get("filename") or "Indexed source"
+        excerpt, line_start, line_end = _relevant_excerpt(document.get("text", ""), query)
+        evidence.append({
+            "id": document["id"],
+            "type": source_type,
+            "title": title,
+            "subtitle": (
+                f"GitHub: {metadata.get('repo')}"
+                if source_type == "github" and metadata.get("repo")
+                else "Repository file" if source_type == "github" else "Indexed document"
+            ),
+            "excerpt": excerpt,
+            "citation": f"Lines {line_start}-{line_end}",
+        })
+    return evidence
 
-If the answer cannot be found in the context,
-say that the information is not available.
 
-CONTEXT:
+def _entity_name(entity: dict) -> str:
+    return entity.get("name") or entity.get("title") or entity.get("number") or entity.get("id") or "Unknown"
+
+
+def _timeline(graph_records: list[dict]) -> list[dict]:
+    """Build factual context steps from stored graph relationships."""
+    steps = []
+    seen = set()
+    for record in graph_records:
+        entity = record.get("entity") or {}
+        connected = record.get("connected_entity") or {}
+        relationship = record.get("relationship")
+        if not entity or not connected or not relationship:
+            continue
+        names = (_entity_name(entity), _entity_name(connected))
+        key = (frozenset(names), relationship)
+        if key in seen:
+            continue
+        seen.add(key)
+        steps.append({
+            "label": f"{names[0]} {relationship.replace('_', ' ').lower()} {names[1]}",
+        })
+    return steps
+
+
+def _document_timeline(documents: list[dict], query: str) -> list[dict]:
+    steps = []
+    for document in documents:
+        metadata = document.get("metadata", {})
+        source = metadata.get("file") or metadata.get("filename") or "Indexed source"
+        excerpt, line_start, line_end = _relevant_excerpt(document.get("text", ""), query, 220)
+        if excerpt:
+            summary = " ".join(excerpt.split())
+            steps.append({
+                "label": f"{source}: {summary}",
+                "citation": f"Lines {line_start}-{line_end}",
+            })
+    return steps
+
+
+def _related(graph_records: list[dict]) -> dict[str, list[str]]:
+    related = {"people": [], "technologies": [], "decisions": [], "pullRequests": []}
+    type_map = {
+        "Person": "people",
+        "Technology": "technologies",
+        "Decision": "decisions",
+        "PullRequest": "pullRequests",
+    }
+    for record in graph_records:
+        for key, labels_key in (("entity", "entity_labels"), ("connected_entity", "connected_labels")):
+            entity = record.get(key) or {}
+            labels = record.get(labels_key) or entity.get("labels") or entity.get("type") or entity.get("entity_type")
+            if isinstance(labels, str):
+                labels = [labels]
+            target = next((type_map.get(label) for label in labels or [] if label in type_map), None)
+            name = _entity_name(entity)
+            if target and name != "Unknown" and name not in related[target]:
+                related[target].append(name)
+    return related
+
+
+def answer_query(query: str, n_results: int = MAX_DOCUMENTS) -> dict:
+    context, documents, graph_records = build_context(query, n_results=n_results)
+    evidence = _evidence(documents, query)
+    if not documents:
+        return {
+            "question": query,
+            "answer": "I could not find relevant indexed knowledge for this question.",
+            "evidenceBacked": False,
+            "evidence": [],
+            "timeline": [],
+            "related": {"people": [], "technologies": [], "decisions": [], "pullRequests": []},
+        }
+
+    prompt = f"""You are an evidence-grounded organizational assistant. Answer the user's question directly using only the supplied evidence.
+
+Return only the final answer for the user: no preamble, reasoning, markdown fences, labels such as "ANSWER:", similarity scores, distances, document numbers, or phrases such as "from Document 1". Use 2-5 concise sentences, or a short bullet list when the question asks for multiple items. Do not repeat the evidence verbatim or invent facts. If the evidence does not support an answer, say so clearly. Mention a source filename only when it helps explain the answer.
+
+EVIDENCE:
 {context}
 
-USER QUESTION:
-{query}
-
-ANSWER:
-"""
-
-    answer = generate_text(prompt)
-
+QUESTION: {query}
+ANSWER:"""
+    answer = _clean_answer(generate_text(prompt))
+    # A similarity score is a retrieval artifact, never a valid user answer.
+    if _is_similarity_score(answer):
+        answer = _clean_answer(generate_text(
+            "Return a plain-language answer to the question using the evidence below. "
+            "Return only the final answer, with no reasoning, labels, scores, or document indexes.\n\n"
+            f"EVIDENCE:\n{context}\n\nQUESTION: {query}\nANSWER:"
+        ))
     return {
-        "query": query,
+        "question": query,
         "answer": answer,
-        "context": context
+        "evidenceBacked": True,
+        "evidence": evidence,
+        "timeline": _timeline(graph_records) or _document_timeline(documents, query),
+        "related": _related(graph_records),
+        "graph_records_used": len(graph_records),
     }
+
+
+def _is_similarity_score(answer: str) -> bool:
+    normalized = answer.strip().lower()
+    if not normalized:
+        return True
+    compact = normalized.replace("(from document 1)", "").strip()
+    try:
+        float(compact)
+        return True
+    except ValueError:
+        return False
+
+
+def _clean_answer(answer: str) -> str:
+    """Remove common provider wrappers before returning text to the UI."""
+    cleaned = (answer or "").strip()
+    if cleaned.startswith("```") and cleaned.endswith("```"):
+        lines = cleaned.splitlines()
+        cleaned = "\n".join(lines[1:-1]).strip()
+    if cleaned.lower().startswith("answer:"):
+        cleaned = cleaned[7:].strip()
+    return cleaned

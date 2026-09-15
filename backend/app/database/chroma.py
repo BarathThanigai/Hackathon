@@ -24,6 +24,8 @@ def add_chunks(
     document_id: str,
     filename: str,
     entity_ids: list[str] | None = None,
+    source_type: str = "document",
+    extra_metadata: dict | None = None,
 ):
     ids = []
     metadatas = []
@@ -34,15 +36,17 @@ def add_chunks(
             f"{document_id}_chunk_{index}"
         )
 
-        metadatas.append({
+        metadata = {
             "document_id": document_id,
             "filename": filename,
             "chunk_index": index,
-            "source_type": "document",
+            "source_type": source_type,
             "entity_ids": ",".join(entity_ids or []),
-        })
+        }
+        metadata.update(extra_metadata or {})
+        metadatas.append(metadata)
 
-    collection.add(
+    collection.upsert(
         documents=chunks,
         ids=ids,
         metadatas=metadatas
