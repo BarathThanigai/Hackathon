@@ -1,8 +1,26 @@
-.decisions-loading {
-  color: var(--text-tertiary);
-  font-size: var(--text-sm);
+.decisions-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -8px 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  animation: decisions-section-enter var(--motion-standard) var(--ease-standard) both;
 }
 
+.decisions-overview-label {
+  color: var(--accent-9);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+}
+
+.decisions-overview-count {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.decisions-loading,
 .decisions-empty {
   color: var(--text-secondary);
   font-size: var(--text-sm);
@@ -12,11 +30,59 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 14px;
+  align-items: stretch;
 }
 
 .decision-detail-card {
-  max-width: 760px;
+  max-width: 860px;
   padding: 28px 30px 32px;
+  background:
+    radial-gradient(ellipse 500px 220px at 0 0, rgba(255, 166, 73, 0.11), transparent 72%),
+    linear-gradient(135deg, rgba(40, 56, 69, 0.38), transparent 58%),
+    var(--bg-surface);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-panel);
+  animation: decision-detail-enter var(--motion-smooth) var(--ease-standard) both;
+}
+
+.decision-detail-card .decision-modal-fields {
+  padding: 20px 0 26px;
+  border-top: 1px solid rgba(255, 166, 73, 0.3);
+}
+
+.decision-detail-card .decision-modal-section {
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(7, 5, 6, 0.62);
+  animation: decision-section-enter var(--motion-standard) var(--ease-standard) both;
+}
+
+.decision-detail-card .decision-modal-section:nth-of-type(2) {
+  animation-delay: 90ms;
+}
+
+.decision-detail-card .decision-modal-section h3 {
+  color: var(--accent-9);
+  letter-spacing: 0.02em;
+}
+
+@keyframes decisions-section-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes decision-detail-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decisions-overview,
+  .decision-detail-card,
+  .decision-detail-card .decision-modal-section {
+    animation: none;
+  }
 }
 
 @media (max-width: 700px) {

@@ -70,15 +70,24 @@ export default function Decisions() {
       )}
 
       {!loading && !error && !empty && (
-        <div className="decisions-list">
-          {decisions.map((decision) => (
-            <DecisionCard
-              key={decision.id}
-              decision={decision}
-              onClick={() => navigate(`/decisions/${decision.id}`)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="decisions-overview">
+            <span className="decisions-overview-label mono">DECISION REGISTER</span>
+            <span className="decisions-overview-count mono">
+              {String(decisions.length).padStart(2, '0')} CAPTURED
+            </span>
+          </div>
+          <div className="decisions-list">
+            {decisions.map((decision, index) => (
+              <DecisionCard
+                key={decision.id}
+                decision={decision}
+                index={index}
+                onClick={() => navigate(`/decisions/${decision.id}`)}
+              />
+            ))}
+          </div>
+        </>
       )}
     </PageContainer>
   );

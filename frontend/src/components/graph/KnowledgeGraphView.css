@@ -5,6 +5,7 @@
     radial-gradient(circle at 1px 1px, var(--border-subtle) 1px, transparent 1px);
   background-size: 28px 28px;
   border-radius: var(--radius-lg);
+  animation: kg-canvas-enter var(--motion-standard) var(--ease-standard) both;
 }
 
 .kg-svg {
@@ -16,14 +17,25 @@
 .kg-edge line {
   stroke: var(--border-strong);
   stroke-width: 1.4;
-  transition: stroke var(--dur-med) var(--ease-standard), opacity var(--dur-med) var(--ease-standard);
+  transition: stroke var(--motion-standard) var(--ease-standard), opacity var(--motion-standard) var(--ease-standard);
 }
 
-.kg-edge.dimmed line { opacity: 0.18; }
-.kg-edge.dimmed .kg-edge-label, .kg-edge.dimmed .kg-edge-label-bg { opacity: 0.18; }
+.kg-edge {
+  animation: kg-edge-enter var(--motion-standard) var(--ease-standard) both;
+}
+
+.kg-edge:nth-child(2) { animation-delay: 40ms; }
+.kg-edge:nth-child(3) { animation-delay: 80ms; }
+.kg-edge:nth-child(4) { animation-delay: 120ms; }
+.kg-edge:nth-child(5) { animation-delay: 160ms; }
+.kg-edge:nth-child(6) { animation-delay: 200ms; }
+
+.kg-edge.dimmed line { opacity: 0.16; }
+.kg-edge.dimmed .kg-edge-label, .kg-edge.dimmed .kg-edge-label-bg { opacity: 0.16; }
 
 .kg-edge-label-bg {
   fill: var(--bg-base);
+  opacity: 0.92;
 }
 
 .kg-edge-label {
@@ -31,15 +43,22 @@
   font-family: var(--font-mono);
   font-size: 8.5px;
   letter-spacing: 0.03em;
-  transition: opacity var(--dur-med) var(--ease-standard);
+  transition: opacity var(--motion-standard) var(--ease-standard), fill var(--motion-standard) var(--ease-standard);
 }
 
 .kg-node {
   cursor: pointer;
-  transition: opacity var(--dur-med) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+  animation: kg-node-enter var(--motion-standard) var(--ease-standard) both;
+  transition: opacity var(--motion-standard) var(--ease-standard);
 }
 
-.kg-node.dimmed { opacity: 0.28; }
+.kg-node:nth-child(2) { animation-delay: 40ms; }
+.kg-node:nth-child(3) { animation-delay: 80ms; }
+.kg-node:nth-child(4) { animation-delay: 120ms; }
+.kg-node:nth-child(5) { animation-delay: 160ms; }
+.kg-node:nth-child(6) { animation-delay: 200ms; }
+
+.kg-node.dimmed { opacity: 0.25; }
 
 .kg-node:hover, .kg-node:focus-visible {
   outline: none;
@@ -49,17 +68,26 @@
   fill: var(--bg-elevated);
   stroke: var(--border-strong);
   stroke-width: 1.5;
-  transition: stroke var(--dur-fast) var(--ease-standard), fill var(--dur-fast) var(--ease-standard);
+  transition:
+    stroke var(--motion-fast) var(--ease-standard),
+    fill var(--motion-fast) var(--ease-standard),
+    stroke-width var(--motion-fast) var(--ease-standard);
 }
 
 .kg-node:hover .kg-node-circle {
   stroke: var(--accent-9);
+  stroke-width: 2;
 }
 
 .kg-node.selected .kg-node-circle {
   fill: var(--accent-wash);
   stroke: var(--accent-9);
   stroke-width: 2;
+}
+
+.kg-node:focus-visible .kg-node-circle {
+  stroke: var(--text-primary);
+  stroke-width: 2.5;
 }
 
 .kg-node-glyph {
@@ -82,3 +110,26 @@
 .kg-node.type-technology .kg-node-circle { stroke: color-mix(in srgb, var(--accent-9) 55%, var(--border-strong)); }
 .kg-node.type-meeting .kg-node-circle { stroke: color-mix(in srgb, var(--hue-meeting) 55%, var(--border-strong)); }
 .kg-node.type-pullrequest .kg-node-circle { stroke: color-mix(in srgb, var(--hue-github) 55%, var(--border-strong)); }
+
+@keyframes kg-canvas-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kg-edge-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kg-node-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kg-canvas,
+  .kg-edge,
+  .kg-node {
+    animation: none;
+  }
+}

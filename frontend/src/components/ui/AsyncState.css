@@ -6,6 +6,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--bg-inset);
+  animation: async-state-enter var(--motion-panel) var(--ease-standard) both;
 }
 
 .async-state-indicator {
@@ -75,5 +76,16 @@
 @keyframes async-state-spin {
   to {
     transform: rotate(360deg);
+  }
+
+  @keyframes async-state-enter {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .async-state {
+      animation: none;
+    }
   }
 }

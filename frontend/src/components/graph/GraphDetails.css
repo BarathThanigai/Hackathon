@@ -1,5 +1,6 @@
 .graph-details {
   padding: 22px;
+  animation: graph-details-enter var(--motion-standard) var(--ease-standard) both;
 }
 
 .graph-details-empty p {
@@ -43,8 +44,10 @@
 }
 
 .graph-details-link {
-  display: inline-block;
-  margin-top: 18px;
+  display: block;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
   color: var(--accent-9);
   font-size: var(--text-sm);
   text-decoration: none;
@@ -52,4 +55,15 @@
 
 .graph-details-link:hover {
   text-decoration: underline;
+}
+
+@keyframes graph-details-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-details {
+    animation: none;
+  }
 }

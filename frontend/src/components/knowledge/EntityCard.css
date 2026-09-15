@@ -3,6 +3,8 @@
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  animation: entity-card-enter var(--motion-standard) var(--ease-standard) both;
+  box-shadow: var(--shadow-panel);
 }
 
 .entity-card-label {
@@ -31,9 +33,32 @@
 .entity-chip-link {
   cursor: pointer;
   font-family: inherit;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .entity-chip-link:hover {
   border-color: var(--accent-9);
+  background: var(--accent-wash);
   color: var(--accent-9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-accent);
+}
+
+@keyframes entity-card-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-card {
+    animation: none;
+  }
+
+  .entity-chip-link:hover {
+    transform: none;
+  }
 }

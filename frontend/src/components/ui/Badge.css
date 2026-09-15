@@ -20,11 +20,11 @@
   border-color: var(--border-default);
 }
 
-.badge-document { background: rgba(138, 151, 255, 0.1); color: var(--hue-document); border-color: rgba(138,151,255,0.25); }
-.badge-github { background: rgba(185, 138, 240, 0.1); color: var(--hue-github); border-color: rgba(185,138,240,0.25); }
-.badge-meeting { background: rgba(69, 201, 201, 0.1); color: var(--hue-meeting); border-color: rgba(69,201,201,0.25); }
+.badge-document { background: rgba(255, 255, 255, 0.08); color: var(--hue-document); border-color: rgba(255,255,255,0.2); }
+.badge-github { background: rgba(197, 154, 164, 0.1); color: var(--hue-github); border-color: rgba(197,154,164,0.25); }
+.badge-meeting { background: rgba(184, 107, 122, 0.1); color: var(--hue-meeting); border-color: rgba(184,107,122,0.25); }
 
 .badge-success { background: var(--success-dim); color: var(--success); border-color: rgba(59,207,142,0.25); }
 .badge-warn { background: var(--warn-dim); color: var(--warn); border-color: rgba(226,161,61,0.25); }
 .badge-danger { background: var(--danger-dim); color: var(--danger); border-color: rgba(239,90,95,0.25); }
-.badge-accent { background: var(--accent-wash); color: var(--accent-9); border-color: rgba(108,142,245,0.3); }
+.badge-accent { background: var(--accent-wash); color: var(--accent-9); border-color: rgba(255,166,73,0.4); }

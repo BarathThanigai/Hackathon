@@ -66,7 +66,10 @@ export default function KnowledgeGraphView({ nodes, edges, selectedId, onSelect,
                 tabIndex={0}
                 role="button"
                 aria-label={node.label}
-                onKeyDown={(e) => (e.key === 'Enter' ? onSelect(node.id) : null)}
+                aria-pressed={isSelected}
+                onKeyDown={(e) => (
+                  e.key === 'Enter' || e.key === ' ' ? onSelect(node.id) : null
+                )}
               >
                 <circle r="22" className="kg-node-circle" />
                 <text textAnchor="middle" dy="5" className="kg-node-glyph">{meta.short}</text>

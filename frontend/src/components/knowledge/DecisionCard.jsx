@@ -2,12 +2,18 @@ import Card from '../ui/Card';
 import { useDecisionModal } from '../../context/DecisionModalContext';
 import './DecisionCard.css';
 
-export default function DecisionCard({ decision, onClick }) {
+export default function DecisionCard({ decision, onClick, index = 0 }) {
   const { openDecision } = useDecisionModal();
   const handleClick = onClick || (() => openDecision(decision.id));
 
   return (
-    <Card interactive as="button" className="decision-card" onClick={handleClick}>
+    <Card
+      interactive
+      as="button"
+      className="decision-card"
+      onClick={handleClick}
+      style={{ '--decision-index': index }}
+    >
       <div className="decision-card-top">
         <h3 className="decision-card-title">{decision.title}</h3>
         <span className="decision-card-date mono">{decision.date}</span>

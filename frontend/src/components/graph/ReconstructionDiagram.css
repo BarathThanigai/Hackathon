@@ -1,20 +1,64 @@
 .recon-diagram {
-  padding: 8px 0 4px;
+  padding: 4px 0 2px;
+}
+
+.recon-diagram-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 4px 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.recon-diagram-kicker {
+  color: var(--accent-9);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+}
+
+.recon-diagram-count {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
 .recon-svg {
+  display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
+}
+
+.recon-node-group {
+  opacity: 0;
+  animation: recon-node-enter var(--motion-fast) var(--ease-standard) forwards;
+  animation-delay: calc(var(--recon-index, 0) * 70ms);
 }
 
 .recon-node {
   fill: var(--bg-inset);
   stroke: var(--border-default);
   stroke-width: 1.2;
+  transition:
+    fill var(--motion-standard) var(--ease-standard),
+    stroke var(--motion-standard) var(--ease-standard);
 }
 
-.recon-node.tone-accent { stroke: rgba(108, 142, 245, 0.5); }
-.recon-node.tone-purple { stroke: rgba(185, 138, 240, 0.45); }
+.recon-node-group:hover .recon-node {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+}
+
+.recon-node.tone-accent {
+  fill: rgba(255, 166, 73, 0.12);
+  stroke: rgba(255, 166, 73, 0.65);
+}
+
+.recon-node.tone-purple {
+  fill: rgba(40, 56, 69, 0.36);
+  stroke: rgba(255, 166, 73, 0.48);
+}
 
 .recon-node-label {
   fill: var(--text-primary);
@@ -31,6 +75,8 @@
 .recon-line {
   stroke: var(--border-strong);
   stroke-width: 1.3;
+  opacity: 0;
+  animation: recon-line-draw var(--motion-standard) var(--ease-standard) forwards;
 }
 
 .recon-arrowhead {
@@ -38,16 +84,52 @@
 }
 
 .recon-answer-label {
-  text-align: center;
-  font-size: var(--text-sm);
+  margin-top: 6px;
   color: var(--text-secondary);
-  margin-top: -6px;
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .recon-line { stroke-dasharray: 3 300; animation: recon-draw 1.4s var(--ease-standard) forwards; }
+@keyframes recon-node-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-@keyframes recon-draw {
-  to { stroke-dasharray: 300 0; }
+@keyframes recon-line-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: 0 300;
+  }
+  to {
+    opacity: 1;
+    stroke-dasharray: 300 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .recon-diagram-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .recon-node-label {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recon-node-group {
+    animation: none;
+    opacity: 1;
+  }
+
+  .recon-line {
+    animation: none;
+    opacity: 1;
+  }
 }

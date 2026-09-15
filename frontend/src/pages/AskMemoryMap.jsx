@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
 import Timeline from '../components/knowledge/Timeline';
 import EvidenceCard from '../components/knowledge/EvidenceCard';
 import EntityCard from '../components/knowledge/EntityCard';
@@ -68,7 +67,7 @@ export default function AskMemoryMap() {
       </form>
 
       {status === 'idle' && (
-        <div className="ask-suggestions">
+        <div className="ask-suggestions motion-panel-enter">
           <div className="ask-suggestions-label mono">Try asking</div>
           <div className="ask-suggestions-list">
             {suggestedQuestions.map((q) => (
@@ -81,7 +80,7 @@ export default function AskMemoryMap() {
       )}
 
       {status === 'loading' && (
-        <Card className="ask-loading">
+        <Card className="ask-loading motion-panel-enter" role="status" aria-live="polite">
           <div className="ask-loading-title">Reconstructing organizational context…</div>
           <ul className="ask-loading-steps">
             {LOADING_STEPS.map((step, i) => (
@@ -92,7 +91,7 @@ export default function AskMemoryMap() {
       )}
 
       {status === 'error' && (
-        <Card className="ask-error">
+        <Card className="ask-error motion-panel-enter" role="alert">
           <div className="ask-error-title">Unable to reconstruct this context.</div>
           <p>Try another question or check your knowledge sources.</p>
         </Card>
@@ -100,10 +99,18 @@ export default function AskMemoryMap() {
 
       {status === 'answered' && answer && (
         <div className="ask-answer">
-          <Card className="ask-explanation">
+          <Card className="ask-explanation motion-panel-enter">
             <div className="ask-explanation-head">
-              <h2>AI explanation</h2>
-              {answer.evidenceBacked && <Badge tone="success">Evidence-backed</Badge>}
+              <div>
+                <div className="ask-result-label mono">Investigation result</div>
+                <h2>AI explanation</h2>
+              </div>
+              {answer.evidenceBacked && (
+                <span className="ask-evidence-status">
+                  <span className="ask-evidence-status-dot" />
+                  Evidence-backed
+                </span>
+              )}
             </div>
             {answer.answer.split('\n\n').map((para, i) => (
               <p key={i} className="ask-explanation-para">{para}</p>
@@ -112,12 +119,12 @@ export default function AskMemoryMap() {
 
           <div className="ask-grid">
             <div className="ask-grid-main">
-              <Card>
+              <Card className="ask-reconstruction-block">
                 <h3 className="ask-block-title">Context timeline</h3>
                 <Timeline steps={investigationTimeline(answer.timeline)} />
               </Card>
 
-              <Card>
+              <Card className="ask-evidence-block">
                 <h3 className="ask-block-title">Evidence</h3>
                 <div className="ask-evidence-list">
                   {answer.evidence.map((ev, i) => (
@@ -126,7 +133,7 @@ export default function AskMemoryMap() {
                 </div>
               </Card>
 
-              <Card>
+              <Card className="ask-diagram-block">
                 <h3 className="ask-block-title">How MemoryMap reconstructed this answer</h3>
                 <ReconstructionDiagram
   question={answer.question || question}

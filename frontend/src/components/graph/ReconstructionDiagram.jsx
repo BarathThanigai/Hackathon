@@ -33,6 +33,12 @@ export default function ReconstructionDiagram({
 
   return (
     <div className="recon-diagram">
+      <div className="recon-diagram-header">
+        <span className="recon-diagram-kicker mono">RECONSTRUCTION PATH</span>
+        <span className="recon-diagram-count mono">
+          {evidenceCount + relationshipCount} signals connected
+        </span>
+      </div>
       <svg
         viewBox="0 0 640 300"
         className="recon-svg"
@@ -47,10 +53,11 @@ export default function ReconstructionDiagram({
           w={180}
           label={questionLabel}
           tone="neutral"
+          index={0}
         />
 
-        <Branch fromX={320} fromY={54} toX={190} toY={100} />
-        <Branch fromX={320} fromY={54} toX={450} toY={100} />
+        <Branch fromX={320} fromY={54} toX={190} toY={100} delay={160} />
+        <Branch fromX={320} fromY={54} toX={450} toY={100} delay={200} />
 
         <Node
           x={190}
@@ -59,6 +66,7 @@ export default function ReconstructionDiagram({
           label="Semantic search"
           sub={searchSub}
           tone="accent"
+          index={1}
         />
 
         <Node
@@ -68,10 +76,11 @@ export default function ReconstructionDiagram({
           label="Knowledge graph"
           sub={graphSub}
           tone="purple"
+          index={2}
         />
 
-        <Straight fromX={190} fromY={134} toX={190} toY={172} />
-        <Straight fromX={450} fromY={134} toX={450} toY={172} />
+        <Straight fromX={190} fromY={134} toX={190} toY={172} delay={280} />
+        <Straight fromX={450} fromY={134} toX={450} toY={172} delay={320} />
 
         <Node
           x={190}
@@ -80,6 +89,7 @@ export default function ReconstructionDiagram({
           label="Relevant evidence"
           sub={evidenceLabel}
           tone="neutral"
+          index={3}
         />
 
         <Node
@@ -89,6 +99,7 @@ export default function ReconstructionDiagram({
           label="Relationships"
           sub={relationshipLabel}
           tone="neutral"
+          index={4}
         />
 
         <Branch
@@ -97,6 +108,7 @@ export default function ReconstructionDiagram({
           toX={320}
           toY={244}
           flip
+          delay={440}
         />
 
         <Branch
@@ -104,6 +116,7 @@ export default function ReconstructionDiagram({
           fromY={216}
           toX={320}
           toY={244}
+          delay={480}
         />
 
         <Node
@@ -113,6 +126,7 @@ export default function ReconstructionDiagram({
           label="AI engine"
           sub="Grounded synthesis"
           tone="accent"
+          index={5}
         />
 
         <Straight
@@ -121,6 +135,7 @@ export default function ReconstructionDiagram({
           toX={320}
           toY={294}
           short
+          delay={560}
         />
       </svg>
 
@@ -173,11 +188,16 @@ function Node({
   label,
   sub,
   tone = 'neutral',
+  index = 0,
 }) {
   const h = sub ? 44 : 34;
 
   return (
-    <g transform={`translate(${x - w / 2}, ${y})`}>
+    <g
+      transform={`translate(${x - w / 2}, ${y})`}
+      className="recon-node-group"
+      style={{ '--recon-index': index }}
+    >
       <rect
         width={w}
         height={h}
@@ -214,6 +234,7 @@ function Straight({
   toX,
   toY,
   short = false,
+  delay = 0,
 }) {
   return (
     <line
@@ -223,6 +244,7 @@ function Straight({
       y2={toY - (short ? 0 : 6)}
       className="recon-line"
       markerEnd={short ? undefined : 'url(#recon-arrow)'}
+      style={{ animationDelay: `${delay}ms` }}
     />
   );
 }
@@ -232,6 +254,7 @@ function Branch({
   fromY,
   toX,
   toY,
+  delay = 0,
 }) {
   const midY = (fromY + toY) / 2 + 8;
 
@@ -248,6 +271,7 @@ function Branch({
       className="recon-line"
       fill="none"
       markerEnd="url(#recon-arrow)"
+      style={{ animationDelay: `${delay}ms` }}
     />
   );
 }

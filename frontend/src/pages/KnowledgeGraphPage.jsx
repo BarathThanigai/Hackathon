@@ -4,7 +4,7 @@ import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import SearchInput from '../components/ui/SearchInput';
 import AsyncState from '../components/ui/AsyncState';
-import KnowledgeGraphView from '../components/graph/KnowledgeGraphView';
+import KnowledgeGraphView, { TYPE_META } from '../components/graph/KnowledgeGraphView';
 import GraphDetails from '../components/graph/GraphDetails';
 import { fetchGraph } from '../services/api';
 import './KnowledgeGraphPage.css';
@@ -91,15 +91,32 @@ export default function KnowledgeGraphPage() {
 
       {graph && graph.nodes.length > 0 && (
         <div className="kg-page-layout">
-          <Card className="kg-page-canvas">
-            <KnowledgeGraphView
-              nodes={graph.nodes}
-              edges={graph.edges}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              query={query}
-            />
-          </Card>
+          <div className="kg-page-canvas-wrap">
+            <div className="kg-graph-heading">
+              <div>
+                <div className="kg-graph-kicker mono">Knowledge topology</div>
+                <h2>Connected organizational knowledge</h2>
+              </div>
+              <div className="kg-graph-count mono">{graph.nodes.length} entities · {graph.edges.length} relationships</div>
+            </div>
+            <Card className="kg-page-canvas">
+              <KnowledgeGraphView
+                nodes={graph.nodes}
+                edges={graph.edges}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                query={query}
+              />
+            </Card>
+            <div className="kg-legend" aria-label="Entity types">
+              {Object.entries(TYPE_META).map(([type, meta]) => (
+                <span key={type} className={`kg-legend-item type-${type}`}>
+                  <span className="kg-legend-mark">{meta.short}</span>
+                  {meta.label}
+                </span>
+              ))}
+            </div>
+          </div>
 
           <Card className="kg-page-panel">
             <GraphDetails

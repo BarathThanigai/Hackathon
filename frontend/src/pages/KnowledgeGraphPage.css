@@ -21,21 +21,112 @@
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 16px;
-  height: calc(100vh - 240px);
+  height: calc(100vh - 258px);
   min-height: 520px;
 }
 
+.kg-page-canvas-wrap {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kg-graph-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 2px;
+}
+
+.kg-graph-kicker {
+  margin-bottom: 4px;
+  color: var(--accent-9);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kg-graph-heading h2 {
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.kg-graph-count {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
 .kg-page-canvas {
+  flex: 1;
   padding: 0;
   overflow: hidden;
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-panel);
 }
 
 .kg-page-panel {
   padding: 0;
   overflow-y: auto;
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-panel);
 }
+
+.kg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 0 2px;
+}
+
+.kg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.kg-legend-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.kg-legend-item.type-person .kg-legend-mark { border-color: var(--hue-document); color: var(--hue-document); }
+.kg-legend-item.type-technology .kg-legend-mark { border-color: var(--accent-9); color: var(--accent-9); }
+.kg-legend-item.type-meeting .kg-legend-mark { border-color: var(--hue-meeting); color: var(--hue-meeting); }
+.kg-legend-item.type-pullrequest .kg-legend-mark { border-color: var(--hue-github); color: var(--hue-github); }
 
 @media (max-width: 900px) {
   .kg-page-layout { grid-template-columns: 1fr; height: auto; }
   .kg-page-canvas { height: 460px; }
+  .kg-page-panel { min-height: 220px; }
+}
+
+@media (max-width: 640px) {
+  .kg-graph-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .kg-graph-count {
+    white-space: normal;
+  }
+
+  .kg-page-canvas {
+    height: 430px;
+  }
 }

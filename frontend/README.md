@@ -24,5 +24,5 @@ Then open the printed local URL (defaults to http://localhost:5173).
 ## Notes
 
 - Global search: press `⌘K` / `Ctrl+K` anywhere in the app.
-- Fonts (IBM Plex Sans / IBM Plex Mono) are self-hosted via `@fontsource`, no external requests at runtime.
+- The frontend uses the universal system serif stack `"Times New Roman", Times, serif`.
 - No Tailwind — plain CSS with a small custom design-token system in `src/styles/tokens.css`.

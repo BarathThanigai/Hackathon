@@ -99,9 +99,9 @@ export default function SourceDetailPage() {
 
   return (
     <PageContainer
-      eyebrow="Knowledge Source"
+      eyebrow={`Source / ${(source.kind || 'unknown').toUpperCase()}`}
       title={source.name}
-      subtitle="Source metadata and ingestion status."
+      subtitle="Inspect the evidence record and how MemoryMap connected it."
       actions={
         <Link className="source-detail-back" to="/sources">
           ← Back to sources
@@ -109,10 +109,10 @@ export default function SourceDetailPage() {
       }
     >
       <div className="source-detail-grid">
-        <Card>
+        <Card className="source-detail-overview">
           <div className="source-detail-header">
             <div>
-              <div className="source-detail-label mono">SOURCE</div>
+              <div className="source-detail-label mono">SOURCE OF KNOWLEDGE</div>
               <h2 className="source-detail-name">{source.name}</h2>
             </div>
 
@@ -143,7 +143,7 @@ export default function SourceDetailPage() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="source-detail-ingestion">
           <div className="source-detail-section-head">
             <div>
               <div className="source-detail-label mono">INGESTION</div>
@@ -173,7 +173,7 @@ export default function SourceDetailPage() {
       )}
 
       <Card className="source-detail-note">
-        <div className="source-detail-label mono">SOURCE CONTENT</div>
+        <div className="source-detail-label mono">CONTENT / EVIDENCE</div>
 
         <p>
           Source content is not currently exposed by the frontend source data.

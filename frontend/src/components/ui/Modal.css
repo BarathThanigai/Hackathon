@@ -8,7 +8,7 @@
   z-index: 100;
   padding: 10vh 24px 24px;
   overflow-y: auto;
-  animation: fadeIn var(--dur-med) var(--ease-standard);
+  animation: fadeIn var(--motion-panel) var(--ease-standard) both;
 }
 
 .modal-align-top { align-items: flex-start; }
@@ -20,7 +20,7 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-pop);
-  animation: slideUp var(--dur-med) var(--ease-standard);
+  animation: slideUp var(--motion-panel) var(--ease-standard) both;
   max-height: 88vh;
   overflow-y: auto;
 }

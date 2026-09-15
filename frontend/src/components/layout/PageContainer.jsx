@@ -2,7 +2,7 @@ import './PageContainer.css';
 
 export default function PageContainer({ eyebrow, title, subtitle, actions, children, wide = false }) {
   return (
-    <div className={`page ${wide ? 'page-wide' : ''}`}>
+    <div className={`page motion-fade-up ${wide ? 'page-wide' : ''}`}>
       {(title || actions) && (
         <div className="page-header">
           <div>

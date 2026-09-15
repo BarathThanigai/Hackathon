@@ -14,13 +14,15 @@
 .evidence-card-link {
   cursor: pointer;
   transition:
-    border-color var(--dur-fast) var(--ease-standard),
-    background var(--dur-fast) var(--ease-standard);
+    border-color var(--motion-standard) var(--ease-standard),
+    background var(--motion-standard) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard);
 }
 
 .evidence-card-link:hover {
   border-color: var(--border-default);
-  background: var(--bg-subtle);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
 }
 
 .evidence-card-head {
@@ -45,6 +47,11 @@
   font-weight: 600;
   color: var(--text-primary);
   font-family: var(--font-mono);
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.evidence-card-link:hover .evidence-card-title {
+  color: var(--accent-9);
 }
 
 .evidence-card-subtitle {
@@ -60,4 +67,10 @@
   line-height: 1.6;
   border-left: 2px solid var(--border-default);
   padding-left: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evidence-card-link:hover {
+    transform: none;
+  }
 }

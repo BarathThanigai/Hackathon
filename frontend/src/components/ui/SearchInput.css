@@ -7,11 +7,15 @@
   border-radius: var(--radius-sm);
   padding: 0 12px;
   height: 40px;
-  transition: border-color var(--dur-fast) var(--ease-standard);
+  transition:
+    border-color var(--motion-standard) var(--ease-standard),
+    background var(--motion-standard) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard);
 }
 
 .search-input:focus-within {
   border-color: var(--accent-9);
+  box-shadow: 0 0 0 3px rgba(255, 166, 73, 0.14);
 }
 
 .search-input-icon {
@@ -31,6 +35,11 @@
 
 .search-input input::placeholder {
   color: var(--text-tertiary);
+  transition: color var(--motion-standard) var(--ease-standard);
+}
+
+.search-input:focus-within input::placeholder {
+  color: var(--text-disabled);
 }
 
 .search-input-kbd {

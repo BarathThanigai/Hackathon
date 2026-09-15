@@ -77,7 +77,7 @@ export default function Dashboard() {
         </form>
       </div>
 
-      <section className="dash-section">
+      <section className="dash-section dash-metrics-section">
         <div className="dash-metrics">
           {METRIC_LABELS.map((metric) => (
             <Card key={metric.key} className="dash-metric">
@@ -94,7 +94,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="dash-section">
+      <section className="dash-section dash-decisions-section">
         <div className="dash-section-head">
           <h2>Recent decisions</h2>
         </div>
@@ -130,7 +130,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="dash-section">
+      <section className="dash-section dash-health-section">
         <div className="dash-section-head">
           <h2>Knowledge health</h2>
           <p>

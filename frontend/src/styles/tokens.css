@@ -1,27 +1,32 @@
 :root {
   /* --- Surfaces --- */
-  --bg-base: #0a0b0d;
-  --bg-surface: #131418;
-  --bg-elevated: #1a1c21;
-  --bg-elevated-hover: #212328;
-  --bg-inset: #0e0f12;
+  --bg-base: #1a252d;
+  --bg-surface: #22323c;
+  --bg-elevated: #2d414d;
+  --bg-elevated-hover: #38515e;
+  --bg-inset: #111b22;
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-inset);
+  --bg-interactive: var(--bg-elevated);
 
   /* --- Borders --- */
-  --border-subtle: #212328;
-  --border-default: #2a2d33;
-  --border-strong: #3a3d45;
+  --border-subtle: #354954;
+  --border-default: #4b626e;
+  --border-strong: #708691;
+  --border-focus: var(--accent-9);
 
   /* --- Text --- */
-  --text-primary: #edeef0;
-  --text-secondary: #9a9ca6;
-  --text-tertiary: #6b6d76;
-  --text-disabled: #45474e;
+  --text-primary: #ffffff;
+  --text-secondary: #d4dadd;
+  --text-tertiary: #9aaab2;
+  --text-disabled: #61737d;
+  --text-muted: var(--text-tertiary);
 
-  /* --- Accent: restrained periwinkle. Stands for "connection" --- */
-  --accent-9: #6c8ef5;
-  --accent-10: #5478e0;
-  --accent-dim: #26305c;
-  --accent-wash: #171b2e;
+  /* --- Accent: restrained burgundy. Stands for attention and connection --- */
+  --accent-9: #ffa649;
+  --accent-10: #db7d24;
+  --accent-dim: #70421e;
+  --accent-wash: #4b301e;
 
   /* --- Status --- */
   --success: #3bcf8e;
@@ -32,13 +37,13 @@
   --danger-dim: #3a1518;
 
   /* --- Source-type hues (small, desaturated) --- */
-  --hue-document: #8a97ff;
-  --hue-github: #b98af0;
-  --hue-meeting: #45c9c9;
+  --hue-document: #ffffff;
+  --hue-github: #e0ad77;
+  --hue-meeting: #b8c9cf;
 
   /* --- Type --- */
-  --font-ui: 'IBM Plex Sans', -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-ui: "Times New Roman", Times, serif;
+  --font-mono: "Times New Roman", Times, serif;
 
   /* --- Scale --- */
   --text-xs: 0.6875rem;   /* 11 */
@@ -49,17 +54,37 @@
   --text-xl: 1.75rem;     /* 28 */
   --text-2xl: 2.25rem;    /* 36 */
 
+  /* --- Spacing --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
   /* --- Radius --- */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
   /* --- Shadow --- */
-  --shadow-panel: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.35);
-  --shadow-pop: 0 12px 40px rgba(0,0,0,0.5);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 30px rgba(0, 0, 0, 0.58);
+  --shadow-md: var(--shadow-panel);
+  --shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.78);
+  --shadow-accent: 0 0 0 3px rgba(255, 166, 73, 0.24), 0 8px 24px rgba(20, 36, 45, 0.4);
 
   /* --- Motion --- */
-  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 150ms;
+  --motion-standard: 240ms;
+  --motion-smooth: 360ms;
+  --motion-emphasis: 500ms;
+  --motion-ambient: 18s;
+  --motion-page: 320ms;
+  --motion-panel: 280ms;
   --dur-fast: 120ms;
   --dur-med: 220ms;
 

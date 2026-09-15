@@ -97,7 +97,7 @@ export default function EntityPage() {
       actions={<Link className="entity-page-back" to="/graph">← Back to graph</Link>}
     >
       <div className="entity-page-grid">
-        <Card>
+        <Card className="entity-page-hero">
           <div className="entity-page-header">
             <div>
               <div className="entity-page-label mono">ENTITY</div>
@@ -130,7 +130,7 @@ export default function EntityPage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="entity-page-knowledge">
           <div className="entity-page-label mono">CONNECTED KNOWLEDGE</div>
           <h2 className="entity-page-section-title">Relationships</h2>
           {connections.length > 0 ? (

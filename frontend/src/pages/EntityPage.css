@@ -14,6 +14,28 @@
   gap: 20px;
 }
 
+.entity-page-hero,
+.entity-page-knowledge {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-panel);
+  animation: entity-panel-enter var(--motion-smooth) var(--ease-standard) both;
+}
+
+.entity-page-hero {
+  background:
+    radial-gradient(ellipse 460px 220px at 0 0, rgba(255, 166, 73, 0.14), transparent 72%),
+    var(--bg-surface);
+}
+
+.entity-page-knowledge {
+  animation-delay: 90ms;
+  background:
+    linear-gradient(145deg, rgba(40, 56, 69, 0.36), transparent 58%),
+    var(--bg-surface);
+}
+
 .entity-page-header {
   display: flex;
   align-items: flex-start;
@@ -23,7 +45,7 @@
 }
 
 .entity-page-label {
-  color: var(--text-tertiary);
+  color: var(--accent-9);
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -32,8 +54,9 @@
 .entity-page-name {
   margin-top: 8px;
   color: var(--text-primary);
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-size: clamp(var(--text-lg), 3vw, var(--text-xl));
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .entity-page-meta {
@@ -47,6 +70,7 @@
   gap: 16px;
   padding: 12px 0;
   border-top: 1px solid var(--border-subtle);
+  animation: entity-meta-enter var(--motion-standard) var(--ease-standard) both;
 }
 
 .entity-page-meta-label,
@@ -67,10 +91,15 @@
   color: var(--accent-9);
   font-size: var(--text-sm);
   text-decoration: none;
+  font-weight: 600;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .entity-page-action:hover {
   text-decoration: underline;
+  transform: translateX(2px);
 }
 
 .entity-page-section-title {
@@ -95,11 +124,19 @@
   border-radius: var(--radius-md);
   color: var(--text-primary);
   text-decoration: none;
+  background: rgba(0, 0, 0, 0.28);
+  transition:
+    border-color var(--motion-standard) var(--ease-standard),
+    background var(--motion-standard) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard);
 }
 
 .entity-page-connection:hover {
   border-color: var(--border-default);
-  background: var(--bg-subtle);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-accent);
+  transform: translateY(-2px);
 }
 
 .entity-page-connection strong {
@@ -113,6 +150,44 @@
   margin-top: 4px;
   color: var(--text-tertiary);
   font-size: var(--text-xs);
+  color: var(--accent-9);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@keyframes entity-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes entity-meta-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-page-hero,
+  .entity-page-knowledge,
+  .entity-page-meta-item {
+    animation: none;
+  }
+
+  .entity-page-action:hover,
+  .entity-page-connection:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 760px) {

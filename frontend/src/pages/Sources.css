@@ -141,6 +141,22 @@
   margin-bottom: 14px;
 }
 
+.src-item {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--motion-standard) var(--ease-standard),
+    background var(--motion-standard) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard);
+}
+
+.src-item:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
+}
+
 .src-item-name {
   font-size: var(--text-sm);
   color: var(--text-primary);
@@ -180,5 +196,11 @@
 @media (max-width: 800px) {
   .src-top-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .src-item:hover {
+    transform: none;
   }
 }

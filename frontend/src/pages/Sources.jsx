@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -211,7 +212,12 @@ export default function Sources() {
                 : { label: 'Processing', tone: 'warn' };
 
             return (
-              <Card key={s.id} className="src-item">
+              <Card
+                key={s.id}
+                as={Link}
+                to={`/sources/${encodeURIComponent(s.id)}`}
+                className="src-item"
+              >
                 <div className="src-item-head">
                   <span className="src-item-name mono">
                     {s.name}
