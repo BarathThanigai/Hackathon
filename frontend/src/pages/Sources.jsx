@@ -4,11 +4,18 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import IngestionDiagram from '../components/graph/IngestionDiagram';
-import { fetchSources, uploadSource, connectRepository } from '../services/api';
+import { useSourceIngestion } from '../context/SourceIngestionContext';
+import { uploadSource, connectRepository } from '../services/api';
 import './Sources.css';
 
 export default function Sources() {
-  const [sources, setSources] = useState(null);
+  const {
+    sources,
+    initializeSources,
+    addSource,
+    replaceSource,
+    failSource,
+  } = useSourceIngestion();
   const [dragOver, setDragOver] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
   const [connecting, setConnecting] = useState(false);
@@ -16,25 +23,25 @@ export default function Sources() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    fetchSources().then(setSources);
-  }, []);
+    initializeSources();
+  }, [initializeSources]);
 
   const handleFiles = async (fileList) => {
     const files = Array.from(fileList || []);
     for (const file of files) {
-      const placeholder = { id: `temp-${file.name}`, name: file.name, kind: 'document', status: 'processing', steps: ['Uploaded'] };
-      setSources((prev) => [placeholder, ...(prev || [])]);
+      const placeholder = {
+        id: `temp-${crypto.randomUUID()}`,
+        name: file.name,
+        kind: 'document',
+        status: 'processing',
+        steps: ['Uploaded'],
+      };
+      addSource(placeholder);
       try {
         const completedSource = await uploadSource(file);
-        setSources((prev) => (prev || []).map((source) => (
-          source.id === placeholder.id ? completedSource : source
-        )));
-      } catch (error) {
-        setSources((prev) => (prev || []).map((source) => (
-          source.id === placeholder.id
-            ? { ...source, status: 'error', steps: ['Uploaded'] }
-            : source
-        )));
+        replaceSource(placeholder.id, completedSource);
+      } catch {
+        failSource(placeholder.id);
       }
     }
   };
@@ -66,7 +73,10 @@ export default function Sources() {
         type="file"
         multiple
         hidden
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.target.value = '';
+        }}
       />
 
       <div className="src-intro">
@@ -107,7 +117,7 @@ export default function Sources() {
             <Button type="submit" variant="secondary" disabled={connecting}>
               {connecting ? 'Connecting…' : connected ? 'Reconnect repository' : 'Connect repository'}
             </Button>
-            {connected && <div className="src-github-connected">Connected — commits and pull requests will sync into the graph.</div>}
+            {connected && <div className="src-github-connected">Repository ingestion is not yet available.</div>}
           </form>
         </Card>
       </div>
@@ -121,24 +131,30 @@ export default function Sources() {
           </Card>
         )}
         <div className="src-list">
-          {sources?.map((s) => (
-            <Card key={s.id} className="src-item">
-              <div className="src-item-head">
-                <span className="src-item-name mono">{s.name}</span>
-                <Badge tone={s.status === 'complete' ? 'success' : 'warn'}>
-                  {s.status === 'complete' ? 'Indexed' : 'Processing'}
-                </Badge>
-              </div>
-              <ul className="src-item-steps">
-                {['Uploaded', 'Text extracted', 'Chunked', 'Embedded', 'Added to knowledge graph'].map((step) => (
-                  <li key={step} className={s.steps.includes(step) ? 'done' : ''}>
-                    <span className="src-item-check">{s.steps.includes(step) ? '✓' : '·'}</span>
-                    {step}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
+          {sources?.map((s) => {
+            const status = s.status === 'complete'
+              ? { label: 'Completed', tone: 'success' }
+              : s.status === 'error'
+                ? { label: 'Failed', tone: 'danger' }
+                : { label: 'Processing', tone: 'warn' };
+
+            return (
+              <Card key={s.id} className="src-item">
+                <div className="src-item-head">
+                  <span className="src-item-name mono">{s.name}</span>
+                  <Badge tone={status.tone}>{status.label}</Badge>
+                </div>
+                <ul className="src-item-steps">
+                  {['Uploaded', 'Text extracted', 'Chunked', 'Embedded', 'Added to knowledge graph'].map((step) => (
+                    <li key={step} className={s.steps.includes(step) ? 'done' : ''}>
+                      <span className="src-item-check">{s.steps.includes(step) ? '✓' : '·'}</span>
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            );
+          })}
         </div>
       </section>
 

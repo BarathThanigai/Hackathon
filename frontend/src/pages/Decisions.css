@@ -1,0 +1,30 @@
+.decisions-loading {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.decisions-empty {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.decisions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.decision-detail-card {
+  max-width: 760px;
+  padding: 28px 30px 32px;
+}
+
+@media (max-width: 700px) {
+  .decisions-list {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-detail-card {
+    padding: 24px 20px;
+  }
+}
