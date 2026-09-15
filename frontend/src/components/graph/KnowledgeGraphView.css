@@ -1,21 +1,143 @@
 .kg-canvas {
+  position: relative;
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(circle at 1px 1px, var(--border-subtle) 1px, transparent 1px);
-  background-size: 28px 28px;
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--accent-9) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-wash) 38%, var(--bg-inset)), var(--bg-base));
+  background-size: 28px 28px, 100% 100%;
   border-radius: var(--radius-lg);
+  overflow: hidden;
 }
+
+.kg-canvas-topline {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.kg-canvas-kicker {
+  color: var(--accent-9);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+.kg-canvas-count {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.kg-zoom-controls {
+  position: absolute;
+  z-index: 3;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.kg-zoom-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+}
+
+.kg-zoom-btn:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kg-zoom-btn:hover {
+  background: color-mix(in srgb, var(--accent-9) 14%, transparent);
+  color: var(--accent-9);
+}
+
+.kg-zoom-reset {
+  font-size: 13px;
+}
+
+.kg-legend {
+  position: absolute;
+  z-index: 2;
+  left: 22px;
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  max-width: calc(100% - 90px);
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(10px);
+}
+
+.kg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.kg-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-tertiary) 12%, transparent);
+}
+
+.kg-legend-dot.type-person { background: var(--hue-document); }
+.kg-legend-dot.type-project { background: var(--accent-9); }
+.kg-legend-dot.type-technology { background: var(--hue-github); }
+.kg-legend-dot.type-decision { background: var(--warning); }
+.kg-legend-dot.type-meeting { background: var(--hue-meeting); }
+.kg-legend-dot.type-pullrequest { background: var(--success); }
 
 .kg-svg {
   width: 100%;
   height: 100%;
   min-height: 480px;
+  padding: 54px 12px 30px;
+  box-sizing: border-box;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
+.kg-svg.panning {
+  cursor: grabbing;
+}
+
+.kg-arrow-head { fill: var(--border-strong); }
+
 .kg-edge line {
-  stroke: var(--border-strong);
-  stroke-width: 1.4;
+  stroke: color-mix(in srgb, var(--accent-9) 42%, var(--border-strong));
+  stroke-width: 1.6;
+  stroke-linecap: round;
   transition: stroke var(--dur-med) var(--ease-standard), opacity var(--dur-med) var(--ease-standard);
 }
 
@@ -23,11 +145,13 @@
 .kg-edge.dimmed .kg-edge-label, .kg-edge.dimmed .kg-edge-label-bg { opacity: 0.18; }
 
 .kg-edge-label-bg {
-  fill: var(--bg-base);
+  fill: color-mix(in srgb, var(--bg-base) 94%, transparent);
+  stroke: var(--border-subtle);
+  stroke-width: 0.7;
 }
 
 .kg-edge-label {
-  fill: var(--text-tertiary);
+  fill: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 8.5px;
   letter-spacing: 0.03em;
@@ -52,6 +176,13 @@
   transition: stroke var(--dur-fast) var(--ease-standard), fill var(--dur-fast) var(--ease-standard);
 }
 
+.kg-node-halo {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 1;
+  transition: fill var(--dur-fast) var(--ease-standard), stroke var(--dur-fast) var(--ease-standard);
+}
+
 .kg-node:hover .kg-node-circle {
   stroke: var(--accent-9);
 }
@@ -60,6 +191,11 @@
   fill: var(--accent-wash);
   stroke: var(--accent-9);
   stroke-width: 2;
+}
+
+.kg-node.selected .kg-node-halo {
+  fill: color-mix(in srgb, var(--accent-9) 12%, transparent);
+  stroke: color-mix(in srgb, var(--accent-9) 35%, transparent);
 }
 
 .kg-node-glyph {
@@ -80,5 +216,14 @@
 
 .kg-node.type-person .kg-node-circle { stroke: color-mix(in srgb, var(--hue-document) 55%, var(--border-strong)); }
 .kg-node.type-technology .kg-node-circle { stroke: color-mix(in srgb, var(--accent-9) 55%, var(--border-strong)); }
+.kg-node.type-project .kg-node-circle { stroke: color-mix(in srgb, var(--accent-9) 72%, var(--border-strong)); }
+.kg-node.type-decision .kg-node-circle { stroke: color-mix(in srgb, var(--warning) 65%, var(--border-strong)); }
 .kg-node.type-meeting .kg-node-circle { stroke: color-mix(in srgb, var(--hue-meeting) 55%, var(--border-strong)); }
 .kg-node.type-pullrequest .kg-node-circle { stroke: color-mix(in srgb, var(--hue-github) 55%, var(--border-strong)); }
+
+@media (max-width: 700px) {
+  .kg-canvas-topline { left: 14px; right: 14px; top: 14px; }
+  .kg-canvas-count { display: none; }
+  .kg-legend { left: 14px; bottom: 14px; max-width: calc(100% - 84px); }
+  .kg-svg { min-height: 420px; padding-left: 0; padding-right: 0; }
+}
