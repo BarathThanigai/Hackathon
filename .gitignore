@@ -55,7 +55,7 @@ data/uploads/*
 data/neo4j/
 neo4j/
 *.db
-
+data/documents/*
 # ==============================
 # Logs
 # ==============================
