@@ -1,6 +1,5 @@
-from pathlib import Path
-
 import chromadb
+from pathlib import Path
 
 
 CHROMA_DIR = (
@@ -24,28 +23,12 @@ def add_chunks(
     chunks: list[str],
     document_id: str,
     filename: str,
-    chunk_entity_ids: list[list[str]] | None = None,
+    entity_ids: list[str] | None = None,
+    source_type: str = "document",
+    extra_metadata: dict | None = None,
 ):
-    """
-    Store document chunks in ChromaDB.
-
-    Each chunk receives only the entity IDs associated
-    with that specific chunk.
-    """
-
     ids = []
     metadatas = []
-
-    chunk_entity_ids = (
-        chunk_entity_ids
-        or [[] for _ in chunks]
-    )
-
-    if len(chunk_entity_ids) != len(chunks):
-        raise ValueError(
-            "chunk_entity_ids must contain exactly one "
-            "entity-ID list for every chunk."
-        )
 
     for index, _ in enumerate(chunks):
 
@@ -53,30 +36,28 @@ def add_chunks(
             f"{document_id}_chunk_{index}"
         )
 
-        entity_ids = chunk_entity_ids[index]
-
-        metadatas.append({
+        metadata = {
             "document_id": document_id,
             "filename": filename,
             "chunk_index": index,
-            "source_type": "document",
-            "entity_ids": ",".join(
-                entity_ids
-            ),
-        })
+            "source_type": source_type,
+            "entity_ids": ",".join(entity_ids or []),
+        }
+        metadata.update(extra_metadata or {})
+        metadatas.append(metadata)
 
     collection.upsert(
         documents=chunks,
         ids=ids,
-        metadatas=metadatas,
+        metadatas=metadatas
     )
 
 
 def search_chunks(
     query: str,
-    n_results: int = 5,
+    n_results: int = 5
 ):
     return collection.query(
         query_texts=[query],
-        n_results=n_results,
+        n_results=n_results
     )

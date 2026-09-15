@@ -1,4 +1,4 @@
-from app.services.vector_store import search_documents
+from app.database.chroma import search_chunks
 
 
 def retrieve_documents(query: str, n_results: int = 5):
@@ -7,7 +7,7 @@ def retrieve_documents(query: str, n_results: int = 5):
     from ChromaDB.
     """
 
-    results = search_documents(
+    results = search_chunks(
         query=query,
         n_results=n_results
     )
@@ -21,10 +21,10 @@ def retrieve_documents(query: str, n_results: int = 5):
 
     for i in range(len(documents)):
         retrieved.append({
-            "id": ids[i],
+            "id": ids[i] if i < len(ids) else f"result-{i}",
             "text": documents[i],
-            "distance": distances[i],
-            "metadata": metadatas[i]
+            "distance": distances[i] if i < len(distances) else None,
+            "metadata": metadatas[i] if i < len(metadatas) else {},
         })
 
     return retrieved
