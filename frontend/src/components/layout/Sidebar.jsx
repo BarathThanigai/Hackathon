@@ -3,7 +3,8 @@ import './Sidebar.css';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: '⌂', end: true },
-  { to: '/ask', label: 'Ask MemoryMap', icon: '⌕' },
+  { to: '/ask', label: 'Ask', icon: '⌕' },
+  { to: '/decisions', label: 'Decisions', icon: '◇' },
   { to: '/graph', label: 'Knowledge Graph', icon: '◈' },
   { to: '/sources', label: 'Sources', icon: '▣' },
   { to: '/risk', label: 'Knowledge at Risk', icon: '⚠' },

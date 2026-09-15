@@ -6,6 +6,8 @@ import DecisionDetailModal from './components/knowledge/DecisionDetailModal';
 import { DecisionModalProvider } from './context/DecisionModalContext';
 import { SourceIngestionProvider } from './context/SourceIngestionContext';
 import Dashboard from './pages/Dashboard';
+import Decisions from './pages/Decisions';
+import DecisionDetailPage from './pages/DecisionDetailPage';
 import AskMemoryMap from './pages/AskMemoryMap';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 import Sources from './pages/Sources';
@@ -36,6 +38,8 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/ask" element={<AskMemoryMap />} />
+                <Route path="/decisions" element={<Decisions />} />
+                <Route path="/decisions/:id" element={<DecisionDetailPage />} />
                 <Route path="/graph" element={<KnowledgeGraphPage />} />
                 <Route path="/sources" element={<Sources />} />
                 <Route path="/risk" element={<KnowledgeRisk />} />

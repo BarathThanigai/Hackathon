@@ -25,6 +25,11 @@ export async function fetchDashboardOverview() {
   return { metrics, recentDecisions: decisions };
 }
 
+export async function fetchDecisions() {
+  await delay(200);
+  return decisions;
+}
+
 function normaliseQueryResponse(question, payload) {
   if (payload.answer && Array.isArray(payload.evidence)) return payload;
 
@@ -64,6 +69,15 @@ export async function askQuestion(question) {
 export async function fetchDecisionDetail(id) {
   await delay(200);
   return decisionDetail[id] || null;
+}
+
+export async function fetchDecision(id) {
+  await delay(200);
+  const summary = decisions.find((decision) => decision.id === id);
+  const detail = decisionDetail[id];
+
+  if (!summary && !detail) return null;
+  return { ...summary, ...detail };
 }
 
 export async function fetchGraph() {
