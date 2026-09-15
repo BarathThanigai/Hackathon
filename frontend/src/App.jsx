@@ -11,6 +11,7 @@ import DecisionDetailPage from './pages/DecisionDetailPage';
 import AskMemoryMap from './pages/AskMemoryMap';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 import Sources from './pages/Sources';
+import SourceDetailPage from './pages/SourceDetailPage';
 import KnowledgeRisk from './pages/KnowledgeRisk';
 
 export default function App() {
@@ -24,7 +25,9 @@ export default function App() {
         setPaletteOpen((v) => !v);
       }
     };
+
     window.addEventListener('keydown', onKey);
+
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
@@ -34,6 +37,7 @@ export default function App() {
         <SourceIngestionProvider>
           <div className="app-shell">
             <Sidebar />
+
             <main className="app-main">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -42,11 +46,17 @@ export default function App() {
                 <Route path="/decisions/:id" element={<DecisionDetailPage />} />
                 <Route path="/graph" element={<KnowledgeGraphPage />} />
                 <Route path="/sources" element={<Sources />} />
+                <Route path="/sources/:id" element={<SourceDetailPage />} />
                 <Route path="/risk" element={<KnowledgeRisk />} />
               </Routes>
             </main>
           </div>
-          <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+          />
+
           <DecisionDetailModal />
         </SourceIngestionProvider>
       </DecisionModalProvider>

@@ -8,6 +8,19 @@
   padding: 16px;
   color: inherit;
   font: inherit;
+  text-decoration: none;
+}
+
+.evidence-card-link {
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.evidence-card-link:hover {
+  border-color: var(--border-default);
+  background: var(--bg-subtle);
 }
 
 .evidence-card-head {
