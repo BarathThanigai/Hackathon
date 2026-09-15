@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
 import './GraphDetails.css';
 
-export default function GraphDetails({ entity }) {
+export default function GraphDetails({ entity, entityId }) {
   if (!entity) {
     return (
       <div className="graph-details graph-details-empty">
@@ -30,6 +31,24 @@ export default function GraphDetails({ entity }) {
         <span className="graph-details-label">Related people</span>
         <span className="graph-details-value mono">{entity.relatedPeople}</span>
       </div>
+
+      {entityId && (
+        <Link
+          className="graph-details-link"
+          to={`/entities/${encodeURIComponent(entity.type.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(entityId)}`}
+        >
+          Open entity page
+        </Link>
+      )}
+
+      {entity.relatedDecisionId && (
+        <Link
+          className="graph-details-link"
+          to={`/decisions/${encodeURIComponent(entity.relatedDecisionId)}`}
+        >
+          Open decision details
+        </Link>
+      )}
     </div>
   );
 }

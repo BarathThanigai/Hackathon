@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import ProjectSelector from '../project/ProjectSelector';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -33,6 +34,8 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-divider" />
+
+      <ProjectSelector />
 
       <div className="sidebar-system">
         <div className="sidebar-system-label">System</div>

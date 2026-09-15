@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import AsyncState from '../components/ui/AsyncState';
+import RiskField from '../components/knowledge/RiskField';
 import { fetchRiskAreas, resolveGraphEntity } from '../services/api';
 import './KnowledgeRisk.css';
 
@@ -14,10 +15,32 @@ const LEVEL_META = {
 
 export default function KnowledgeRisk() {
   const [areas, setAreas] = useState(null);
+  const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
-    fetchRiskAreas().then(setAreas);
-  }, []);
+    let active = true;
+
+    fetchRiskAreas()
+      .then((result) => {
+        if (!active) return;
+        setAreas(result);
+      })
+      .catch(() => {
+        if (!active) return;
+        setError(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [retryKey]);
+
+  const retry = () => {
+    setAreas(null);
+    setError(false);
+    setRetryKey((value) => value + 1);
+  };
 
   return (
     <PageContainer
@@ -27,69 +50,85 @@ export default function KnowledgeRisk() {
     >
       <Card className="risk-note">
         <p>
-          Risk levels below are a rule-based heuristic — how concentrated a system's history is
-          in one contributor, and how little of it is written down. This is not a machine-learning
-          prediction.
+          Risk levels below are a rule-based heuristic — how concentrated a
+          system's history is in one contributor, and how little of it is
+          written down. This is not a machine-learning prediction.
         </p>
       </Card>
 
-      {!areas && <div className="risk-loading">Loading risk areas…</div>}
+      {!areas && !error && (
+        <AsyncState
+          status="loading"
+          title="Loading risk areas…"
+        />
+      )}
 
-      <div className="risk-list">
-        {areas?.map((area) => {
-          const meta = LEVEL_META[area.level];
+      {error && (
+        <AsyncState
+          status="error"
+          title="Unable to load knowledge risk"
+          message="MemoryMap could not retrieve the current risk areas."
+          onRetry={retry}
+        />
+      )}
 
-          return (
-            <Card key={area.id} className="risk-card">
-              <div className="risk-card-head">
-                <Badge tone={meta.tone}>{meta.label}</Badge>
-                <h3>{area.title}</h3>
-              </div>
+      {areas?.length === 0 && (
+        <AsyncState
+          status="empty"
+          title="No knowledge risks identified"
+          message="Risk areas will appear when enough organizational history is available."
+        />
+      )}
 
-              <div className="risk-card-grid">
-                <RiskContributor contributor={area.primaryContributor} />
-                <RiskField label="Related commits" value={area.relatedCommits} mono />
-                <RiskField label="Related discussions" value={area.relatedDiscussions} mono />
-                <RiskField label="Documentation coverage" value={area.documentationCoverage} />
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+      {areas && areas.length > 0 && (
+        <div className="risk-list">
+          {areas.map((area) => {
+            const meta = LEVEL_META[area.level];
+            const entityId = resolveGraphEntity(
+              area.primaryContributor,
+              'person',
+            );
+
+            return (
+              <Card key={area.id} className="risk-card">
+                <div className="risk-card-head">
+                  <Badge tone={meta.tone}>{meta.label}</Badge>
+                  <h3>{area.title}</h3>
+                </div>
+
+                <div className="risk-card-grid">
+                  <RiskField
+                    label="Primary contributor"
+                    value={area.primaryContributor}
+                    to={
+                      entityId
+                        ? `/graph?entity=${encodeURIComponent(entityId)}`
+                        : null
+                    }
+                  />
+
+                  <RiskField
+                    label="Related commits"
+                    value={area.relatedCommits}
+                    mono
+                  />
+
+                  <RiskField
+                    label="Related discussions"
+                    value={area.relatedDiscussions}
+                    mono
+                  />
+
+                  <RiskField
+                    label="Documentation coverage"
+                    value={area.documentationCoverage}
+                  />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </PageContainer>
-  );
-}
-
-function RiskContributor({ contributor }) {
-  const entityId = resolveGraphEntity(contributor, 'person');
-
-  if (!entityId) {
-    return (
-      <RiskField
-        label="Primary contributor"
-        value={contributor}
-      />
-    );
-  }
-
-  return (
-    <div className="risk-field">
-      <div className="risk-field-label">Primary contributor</div>
-      <Link
-        className="risk-field-link"
-        to={`/graph?entity=${encodeURIComponent(entityId)}`}
-      >
-        {contributor}
-      </Link>
-    </div>
-  );
-}
-
-function RiskField({ label, value, mono = false }) {
-  return (
-    <div className="risk-field">
-      <div className="risk-field-label">{label}</div>
-      <div className={`risk-field-value ${mono ? 'mono' : ''}`}>{value}</div>
-    </div>
   );
 }

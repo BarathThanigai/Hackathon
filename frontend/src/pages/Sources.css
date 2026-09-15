@@ -25,7 +25,9 @@
   cursor: pointer;
   border-style: dashed;
   border-color: var(--border-default);
-  transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
 }
 
 .src-dropzone.drag-over,
@@ -83,10 +85,18 @@
   outline: none;
   margin-bottom: 8px;
 }
-.src-github-input:focus { border-color: var(--accent-9); }
-.src-github-input::placeholder { color: var(--text-tertiary); }
 
-.src-github-form .btn { align-self: flex-start; }
+.src-github-input:focus {
+  border-color: var(--accent-9);
+}
+
+.src-github-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.src-github-form .btn {
+  align-self: flex-start;
+}
 
 .src-github-connected {
   font-size: var(--text-xs);
@@ -111,7 +121,8 @@
   margin-bottom: 18px;
 }
 
-.src-loading, .src-empty p {
+.src-loading,
+.src-empty p {
   color: var(--text-tertiary);
   font-size: var(--text-sm);
 }
@@ -167,5 +178,7 @@
 }
 
 @media (max-width: 800px) {
-  .src-top-grid { grid-template-columns: 1fr; }
+  .src-top-grid {
+    grid-template-columns: 1fr;
+  }
 }

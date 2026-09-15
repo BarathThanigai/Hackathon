@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Badge from '../ui/Badge';
 import { sources } from '../../data/mockData';
+import { resolveGraphEntity } from '../../services/api';
 import './EvidenceCard.css';
 
 const TONE = {
@@ -23,8 +24,19 @@ function findSourceForEvidence(evidence) {
   )) || null;
 }
 
+function findGraphEntityForEvidence(evidence) {
+  if (evidence.type === 'document') return null;
+
+  const graphLabel = evidence.title === 'Pull Request #428'
+    ? 'PR #428'
+    : evidence.title;
+
+  return resolveGraphEntity(graphLabel);
+}
+
 export default function EvidenceCard({ index, evidence }) {
   const source = findSourceForEvidence(evidence);
+  const graphEntityId = findGraphEntityForEvidence(evidence);
 
   const content = (
     <>
@@ -53,6 +65,17 @@ export default function EvidenceCard({ index, evidence }) {
     return (
       <Link
         to={`/sources/${encodeURIComponent(source.id)}`}
+        className="evidence-card evidence-card-link"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  if (graphEntityId) {
+    return (
+      <Link
+        to={`/graph?entity=${encodeURIComponent(graphEntityId)}`}
         className="evidence-card evidence-card-link"
       >
         {content}

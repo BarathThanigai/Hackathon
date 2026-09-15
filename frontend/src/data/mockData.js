@@ -185,6 +185,7 @@ export const graphEntityDetails = {
   'redis-decision': {
     name: 'Redis Decision',
     type: 'Decision',
+    relatedDecisionId: 'dec-redis-cache',
     relatedDecisions: 1,
     relatedProjects: 1,
     relatedPeople: 1,

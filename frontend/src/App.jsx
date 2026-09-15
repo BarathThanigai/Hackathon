@@ -13,6 +13,9 @@ import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 import Sources from './pages/Sources';
 import SourceDetailPage from './pages/SourceDetailPage';
 import KnowledgeRisk from './pages/KnowledgeRisk';
+import EntityPage from './pages/EntityPage';
+import NewProjectPage from './pages/NewProjectPage';
+import { ProjectProvider } from './context/ProjectProvider';
 
 export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -35,8 +38,9 @@ export default function App() {
     <BrowserRouter>
       <DecisionModalProvider>
         <SourceIngestionProvider>
-          <div className="app-shell">
-            <Sidebar />
+          <ProjectProvider>
+            <div className="app-shell">
+              <Sidebar />
 
             <main className="app-main">
               <Routes>
@@ -45,12 +49,14 @@ export default function App() {
                 <Route path="/decisions" element={<Decisions />} />
                 <Route path="/decisions/:id" element={<DecisionDetailPage />} />
                 <Route path="/graph" element={<KnowledgeGraphPage />} />
+                <Route path="/entities/:type/:id" element={<EntityPage />} />
+                <Route path="/projects/new" element={<NewProjectPage />} />
                 <Route path="/sources" element={<Sources />} />
                 <Route path="/sources/:id" element={<SourceDetailPage />} />
                 <Route path="/risk" element={<KnowledgeRisk />} />
               </Routes>
             </main>
-          </div>
+            </div>
 
           <CommandPalette
             open={paletteOpen}
@@ -58,6 +64,7 @@ export default function App() {
           />
 
           <DecisionDetailModal />
+          </ProjectProvider>
         </SourceIngestionProvider>
       </DecisionModalProvider>
     </BrowserRouter>

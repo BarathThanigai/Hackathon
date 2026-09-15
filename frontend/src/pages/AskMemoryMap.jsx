@@ -114,7 +114,7 @@ export default function AskMemoryMap() {
             <div className="ask-grid-main">
               <Card>
                 <h3 className="ask-block-title">Context timeline</h3>
-                <Timeline steps={answer.timeline} />
+                <Timeline steps={investigationTimeline(answer.timeline)} />
               </Card>
 
               <Card>
@@ -172,6 +172,21 @@ function decisionItems(items, navigate) {
       label: item,
       destination: `/decisions/${encodeURIComponent(decisionId)}`,
       onClick: () => navigate(`/decisions/${encodeURIComponent(decisionId)}`),
+    };
+  });
+}
+
+function investigationTimeline(steps) {
+  return (steps || []).map((step) => {
+    const label = typeof step === 'string' ? step : step.label;
+    const graphLabel = label === 'Pull Request #428' ? 'PR #428' : label;
+    const entityId = resolveGraphEntity(graphLabel);
+
+    if (!entityId) return step;
+
+    return {
+      ...(typeof step === 'object' ? step : { label }),
+      destination: `/graph?entity=${encodeURIComponent(entityId)}`,
     };
   });
 }

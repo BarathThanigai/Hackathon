@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import SearchInput from '../components/ui/SearchInput';
+import AsyncState from '../components/ui/AsyncState';
 import KnowledgeGraphView from '../components/graph/KnowledgeGraphView';
 import GraphDetails from '../components/graph/GraphDetails';
 import { fetchGraph } from '../services/api';
@@ -10,6 +11,8 @@ import './KnowledgeGraphPage.css';
 
 export default function KnowledgeGraphPage() {
   const [graph, setGraph] = useState(null);
+  const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState('');
   const [searchParams] = useSearchParams();
@@ -18,17 +21,35 @@ export default function KnowledgeGraphPage() {
   useEffect(() => {
     let active = true;
 
-    fetchGraph().then((g) => {
-      if (!active) return;
-      setGraph(g);
-      const hasRequestedEntity = g.nodes.some((node) => node.id === requestedEntityId);
-      setSelectedId(hasRequestedEntity ? requestedEntityId : 'redis');
-    });
+    fetchGraph()
+      .then((result) => {
+        if (!active) return;
+
+        setGraph(result);
+
+        const hasRequestedEntity = result.nodes.some(
+          (node) => node.id === requestedEntityId,
+        );
+
+        setSelectedId(
+          hasRequestedEntity ? requestedEntityId : 'redis',
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setError(true);
+      });
 
     return () => {
       active = false;
     };
-  }, [requestedEntityId]);
+  }, [requestedEntityId, retryKey]);
+
+  const retry = () => {
+    setGraph(null);
+    setError(false);
+    setRetryKey((value) => value + 1);
+  };
 
   return (
     <PageContainer
@@ -44,14 +65,31 @@ export default function KnowledgeGraphPage() {
         />
       }
     >
-      {!graph ? (
-        <div className="kg-page-loading">Loading knowledge graph…</div>
-      ) : graph.nodes.length === 0 ? (
-        <Card className="kg-page-empty">
-          <h3>Your organizational graph is empty.</h3>
-          <p>Add a knowledge source to begin connecting your organization's memory.</p>
-        </Card>
-      ) : (
+      {error && (
+        <AsyncState
+          status="error"
+          title="Unable to load the knowledge graph"
+          message="MemoryMap could not retrieve the graph data."
+          onRetry={retry}
+        />
+      )}
+
+      {!graph && !error && (
+        <AsyncState
+          status="loading"
+          title="Loading knowledge graph…"
+        />
+      )}
+
+      {graph && graph.nodes.length === 0 && (
+        <AsyncState
+          status="empty"
+          title="Your organizational graph is empty"
+          message="Add a knowledge source to begin connecting your organization's memory."
+        />
+      )}
+
+      {graph && graph.nodes.length > 0 && (
         <div className="kg-page-layout">
           <Card className="kg-page-canvas">
             <KnowledgeGraphView
@@ -62,8 +100,12 @@ export default function KnowledgeGraphPage() {
               query={query}
             />
           </Card>
+
           <Card className="kg-page-panel">
-            <GraphDetails entity={selectedId ? graph.details[selectedId] : null} />
+            <GraphDetails
+              entityId={selectedId}
+              entity={selectedId ? graph.details[selectedId] : null}
+            />
           </Card>
         </div>
       )}

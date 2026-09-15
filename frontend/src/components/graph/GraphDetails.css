@@ -41,3 +41,15 @@
   color: var(--text-primary);
   font-weight: 500;
 }
+
+.graph-details-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--accent-9);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.graph-details-link:hover {
+  text-decoration: underline;
+}

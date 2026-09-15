@@ -6,6 +6,7 @@ import {
   metrics,
   decisions,
   decisionDetail,
+  demoAnswer,
   graphNodes,
   graphEdges,
   graphEntityDetails,
@@ -15,6 +16,7 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 const DELAY = 500;
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 function delay(ms = DELAY) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -36,6 +38,7 @@ function normaliseQueryResponse(question, payload) {
   const documents = payload.documents?.[0] || [];
   const metadatas = payload.metadatas?.[0] || [];
   const ids = payload.ids?.[0] || [];
+
   const evidence = documents.map((text, index) => ({
     id: ids[index] || `result-${index}`,
     type: 'document',
@@ -47,22 +50,40 @@ function normaliseQueryResponse(question, payload) {
   return {
     question,
     answer: evidence.length
-      ? `I found ${evidence.length} relevant document ${evidence.length === 1 ? 'result' : 'results'} for this question. Review the evidence below for the supporting context.`
+      ? `I found ${evidence.length} relevant document ${
+          evidence.length === 1 ? 'result' : 'results'
+        } for this question. Review the evidence below for the supporting context.`
       : 'No relevant indexed document was found for this question.',
     evidenceBacked: evidence.length > 0,
     timeline: [],
     evidence,
-    related: { people: [], technologies: [], decisions: [], pullRequests: [] },
+    related: {
+      people: [],
+      technologies: [],
+      decisions: [],
+      pullRequests: [],
+    },
   };
 }
 
 export async function askQuestion(question) {
+  if (USE_MOCK_API) {
+    await delay(500);
+
+    return {
+      ...demoAnswer,
+      question,
+    };
+  }
+
   const res = await fetch(`${BASE_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question }),
   });
+
   if (!res.ok) throw new Error('Query failed');
+
   return normaliseQueryResponse(question, await res.json());
 }
 
@@ -73,16 +94,59 @@ export async function fetchDecisionDetail(id) {
 
 export async function fetchDecision(id) {
   await delay(200);
+
   const summary = decisions.find((decision) => decision.id === id);
   const detail = decisionDetail[id];
 
   if (!summary && !detail) return null;
+
   return { ...summary, ...detail };
 }
 
 export async function fetchGraph() {
   await delay(300);
-  return { nodes: graphNodes, edges: graphEdges, details: graphEntityDetails };
+  return {
+    nodes: graphNodes,
+    edges: graphEdges,
+    details: graphEntityDetails,
+  };
+}
+
+function normaliseEntityType(type) {
+  return type.toLowerCase().replace(/[\s-]/g, '');
+}
+
+export async function fetchEntity(id, type) {
+  await delay(200);
+
+  const node = graphNodes.find((item) => (
+    item.id === id && normaliseEntityType(item.type) === normaliseEntityType(type)
+  ));
+
+  if (!node) return null;
+
+  const connections = graphEdges
+    .filter((edge) => edge.source === id || edge.target === id)
+    .map((edge) => {
+      const connectedId = edge.source === id ? edge.target : edge.source;
+      const connectedNode = graphNodes.find((item) => item.id === connectedId);
+
+      if (!connectedNode) return null;
+
+      return {
+        id: connectedNode.id,
+        label: connectedNode.label,
+        type: connectedNode.type,
+        relationship: edge.label,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    node,
+    detail: graphEntityDetails[id] || null,
+    connections,
+  };
 }
 
 export function resolveGraphEntity(label, expectedType) {
@@ -119,21 +183,44 @@ export async function fetchSources() {
 export async function uploadSource(file) {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${BASE_URL}/api/ingestion/document`, { method: 'POST', body: formData });
-  if (!res.ok) throw new Error((await res.json()).detail || 'Document upload failed');
+
+  const res = await fetch(
+    `${BASE_URL}/api/ingestion/document`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      (await res.json()).detail || 'Document upload failed',
+    );
+  }
+
   const payload = await res.json();
+
   return {
     id: payload.document_id,
     name: payload.filename,
     kind: 'document',
     status: 'complete',
-    steps: ['Uploaded', 'Text extracted', 'Chunked', 'Embedded', 'Added to knowledge graph'],
+    steps: [
+      'Uploaded',
+      'Text extracted',
+      'Chunked',
+      'Embedded',
+      'Added to knowledge graph',
+    ],
   };
 }
 
 export async function connectRepository(url) {
   await delay(500);
-  return { connected: true, url };
+  return {
+    connected: true,
+    url,
+  };
 }
 
 export async function fetchRiskAreas() {

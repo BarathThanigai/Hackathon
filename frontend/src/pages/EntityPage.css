@@ -1,0 +1,122 @@
+.entity-page-back {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.entity-page-back:hover {
+  color: var(--text-primary);
+}
+
+.entity-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  gap: 20px;
+}
+
+.entity-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.entity-page-label {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.entity-page-name {
+  margin-top: 8px;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.entity-page-meta {
+  display: grid;
+  gap: 0;
+}
+
+.entity-page-meta-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.entity-page-meta-label,
+.entity-page-connection-type {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.entity-page-meta-value {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+.entity-page-action {
+  display: inline-block;
+  margin-top: 20px;
+  color: var(--accent-9);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.entity-page-action:hover {
+  text-decoration: underline;
+}
+
+.entity-page-section-title {
+  margin: 8px 0 18px;
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.entity-page-connections {
+  display: grid;
+  gap: 10px;
+}
+
+.entity-page-connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.entity-page-connection:hover {
+  border-color: var(--border-default);
+  background: var(--bg-subtle);
+}
+
+.entity-page-connection strong {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.entity-page-relationship {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 760px) {
+  .entity-page-grid {
+    grid-template-columns: 1fr;
+  }
+}

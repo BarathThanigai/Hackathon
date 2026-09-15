@@ -1,4 +1,5 @@
 import './Timeline.css';
+import { Link } from 'react-router-dom';
 
 export default function Timeline({ steps }) {
   return (
@@ -9,7 +10,15 @@ export default function Timeline({ steps }) {
             <span className="timeline-dot" />
             {i < steps.length - 1 && <span className="timeline-line" />}
           </div>
-          <span className="timeline-label">{typeof step === 'string' ? step : step.label}</span>
+          {typeof step === 'object' && step.destination ? (
+            <Link className="timeline-label" to={step.destination}>
+              {step.label}
+            </Link>
+          ) : (
+            <span className="timeline-label">
+              {typeof step === 'string' ? step : step.label}
+            </span>
+          )}
         </li>
       ))}
     </ol>

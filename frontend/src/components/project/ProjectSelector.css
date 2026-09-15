@@ -1,0 +1,125 @@
+.project-selector {
+  position: relative;
+  margin: 0 0 18px;
+}
+
+.project-selector-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-selector-trigger:hover,
+.project-selector-trigger:focus-visible {
+  border-color: var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.project-selector-icon,
+.project-selector-option-icon {
+  color: var(--accent-9);
+  font-size: 14px;
+}
+
+.project-selector-current {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.project-selector-name {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-selector-caption,
+.project-selector-heading {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.project-selector-chevron {
+  color: var(--text-tertiary);
+}
+
+.project-selector-menu {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+.project-selector-heading {
+  padding: 5px 8px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.project-selector-option,
+.project-selector-add {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.project-selector-option:hover,
+.project-selector-option:focus-visible,
+.project-selector-add:hover,
+.project-selector-add:focus-visible {
+  background: var(--bg-elevated-hover);
+  color: var(--text-primary);
+}
+
+.project-selector-check {
+  margin-left: auto;
+  color: var(--success);
+}
+
+.project-selector-menu-divider {
+  height: 1px;
+  margin: 7px 0;
+  background: var(--border-subtle);
+}
+
+.project-selector-add {
+  color: var(--accent-9);
+}
+
+@media (max-width: 900px) {
+  .project-selector-menu {
+    position: fixed;
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+    left: 14px;
+  }
+}

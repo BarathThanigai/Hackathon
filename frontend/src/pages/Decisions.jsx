@@ -1,18 +1,43 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
-import Card from '../components/ui/Card';
+import AsyncState from '../components/ui/AsyncState';
 import DecisionCard from '../components/knowledge/DecisionCard';
 import { fetchDecisions } from '../services/api';
 import './Decisions.css';
 
 export default function Decisions() {
   const [decisions, setDecisions] = useState(null);
+  const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchDecisions().then(setDecisions);
-  }, []);
+    let active = true;
+
+    fetchDecisions()
+      .then((result) => {
+        if (!active) return;
+        setDecisions(result);
+      })
+      .catch(() => {
+        if (!active) return;
+        setError(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [retryKey]);
+
+  const retry = () => {
+    setDecisions(null);
+    setError(false);
+    setRetryKey((value) => value + 1);
+  };
+
+  const loading = decisions === null && !error;
+  const empty = decisions?.length === 0;
 
   return (
     <PageContainer
@@ -20,21 +45,41 @@ export default function Decisions() {
       title="Decisions"
       subtitle="Explore the choices that shaped your organization and the evidence behind them."
     >
-      {!decisions && <div className="decisions-loading">Loading decisions…</div>}
-      {decisions?.length === 0 && (
-        <Card className="decisions-empty">
-          <p>No decisions have been captured yet.</p>
-        </Card>
+      {loading && (
+        <AsyncState
+          status="loading"
+          title="Loading decisions…"
+        />
       )}
-      <div className="decisions-list">
-        {decisions?.map((decision) => (
-          <DecisionCard
-            key={decision.id}
-            decision={decision}
-            onClick={() => navigate(`/decisions/${decision.id}`)}
-          />
-        ))}
-      </div>
+
+      {error && (
+        <AsyncState
+          status="error"
+          title="Unable to load decisions"
+          message="MemoryMap could not retrieve the decision history."
+          onRetry={retry}
+        />
+      )}
+
+      {empty && (
+        <AsyncState
+          status="empty"
+          title="No decisions have been captured yet"
+          message="Captured organizational decisions will appear here."
+        />
+      )}
+
+      {!loading && !error && !empty && (
+        <div className="decisions-list">
+          {decisions.map((decision) => (
+            <DecisionCard
+              key={decision.id}
+              decision={decision}
+              onClick={() => navigate(`/decisions/${decision.id}`)}
+            />
+          ))}
+        </div>
+      )}
     </PageContainer>
   );
 }
