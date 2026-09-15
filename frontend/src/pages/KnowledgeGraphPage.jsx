@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import SearchInput from '../components/ui/SearchInput';
@@ -11,13 +12,23 @@ export default function KnowledgeGraphPage() {
   const [graph, setGraph] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const requestedEntityId = searchParams.get('entity');
 
   useEffect(() => {
+    let active = true;
+
     fetchGraph().then((g) => {
+      if (!active) return;
       setGraph(g);
-      setSelectedId('redis');
+      const hasRequestedEntity = g.nodes.some((node) => node.id === requestedEntityId);
+      setSelectedId(hasRequestedEntity ? requestedEntityId : 'redis');
     });
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [requestedEntityId]);
 
   return (
     <PageContainer

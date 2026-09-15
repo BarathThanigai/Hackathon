@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -8,7 +8,7 @@ import Timeline from '../components/knowledge/Timeline';
 import EvidenceCard from '../components/knowledge/EvidenceCard';
 import EntityCard from '../components/knowledge/EntityCard';
 import ReconstructionDiagram from '../components/graph/ReconstructionDiagram';
-import { askQuestion } from '../services/api';
+import { askQuestion, resolveDecision, resolveGraphEntity } from '../services/api';
 import { suggestedQuestions } from '../data/mockData';
 import './AskMemoryMap.css';
 
@@ -16,6 +16,7 @@ const LOADING_STEPS = ['Searching evidence', 'Connecting relationships', 'Synthe
 
 export default function AskMemoryMap() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [question, setQuestion] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | answered | error
   const [answer, setAnswer] = useState(null);
@@ -133,14 +134,40 @@ export default function AskMemoryMap() {
 
             <div className="ask-grid-side">
               <div className="ask-related-label mono">Related knowledge</div>
-              <EntityCard label="People" items={answer.related.people} />
-              <EntityCard label="Technology" items={answer.related.technologies} />
-              <EntityCard label="Decision" items={answer.related.decisions} />
-              <EntityCard label="Pull Request" items={answer.related.pullRequests} />
+              <EntityCard label="People" items={relatedItems(answer.related?.people, 'person', navigate)} />
+              <EntityCard label="Technology" items={relatedItems(answer.related?.technologies, 'technology', navigate)} />
+              <EntityCard label="Decision" items={decisionItems(answer.related?.decisions, navigate)} />
+              <EntityCard label="Pull Request" items={answer.related?.pullRequests} />
             </div>
           </div>
         </div>
       )}
     </PageContainer>
   );
+}
+
+function relatedItems(items, expectedType, navigate) {
+  return (items || []).filter((item) => typeof item === 'string').map((item) => {
+    const entityId = resolveGraphEntity(item, expectedType);
+    if (!entityId) return item;
+
+    return {
+      label: item,
+      destination: `/graph?entity=${encodeURIComponent(entityId)}`,
+      onClick: () => navigate(`/graph?entity=${encodeURIComponent(entityId)}`),
+    };
+  });
+}
+
+function decisionItems(items, navigate) {
+  return (items || []).filter((item) => typeof item === 'string').map((item) => {
+    const decisionId = resolveDecision(item);
+    if (!decisionId) return item;
+
+    return {
+      label: item,
+      destination: `/decisions/${encodeURIComponent(decisionId)}`,
+      onClick: () => navigate(`/decisions/${encodeURIComponent(decisionId)}`),
+    };
+  });
 }

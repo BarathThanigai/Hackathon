@@ -6,15 +6,8 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 16px;
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
   color: inherit;
   font: inherit;
-}
-
-.evidence-card:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-elevated);
 }
 
 .evidence-card-head {
