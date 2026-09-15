@@ -128,7 +128,11 @@ export default function AskMemoryMap() {
 
               <Card>
                 <h3 className="ask-block-title">How MemoryMap reconstructed this answer</h3>
-                <ReconstructionDiagram />
+                <ReconstructionDiagram
+  question={answer.question || question}
+  evidence={answer.evidence || []}
+  related={answer.related || {}}
+/>
               </Card>
             </div>
 
