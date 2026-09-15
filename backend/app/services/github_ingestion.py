@@ -1,17 +1,32 @@
 from app.services.github_service import github
 from app.services.knowledge_extractor import extract_knowledge
 from app.services.graph import store_knowledge
-from app.services.vector_store import store_document
+from app.database.chroma import add_chunks
 
 
 # Files worth ingesting into organizational memory.
 ALLOWED_EXTENSIONS = {
+    ".astro",
+    ".c",
+    ".cpp",
+    ".cs",
+    ".css",
+    ".go",
+    ".html",
     ".py",
     ".js",
     ".jsx",
+    ".json",
+    ".php",
+    ".rb",
+    ".rs",
+    ".scss",
+    ".sh",
     ".ts",
     ".tsx",
+    ".vue",
     ".sql",
+    ".txt",
     ".yml",
     ".yaml",
     ".md",
@@ -92,6 +107,8 @@ def _chunk_text(text: str, max_chars: int = 6000) -> list[str]:
 def ingest_github_file(
     repo_name: str,
     file_path: str,
+    checkpoint=None,
+    repo=None,
 ):
     """
     Ingest one GitHub file.
@@ -104,7 +121,7 @@ def ingest_github_file(
     5. Stored in ChromaDB
     """
 
-    repo = github.get_repo(repo_name)
+    repo = repo or github.get_repo(repo_name)
 
     file = repo.get_contents(file_path)
 
@@ -120,6 +137,9 @@ def ingest_github_file(
 
     chunks = _chunk_text(text)
 
+    if checkpoint:
+        checkpoint("chunking_file", "Chunked repository file", chunks_total=len(chunks))
+
     print(f"\nFILE: {file_path}")
     print(f"SIZE: {len(text)} characters")
     print(f"CHUNKS: {len(chunks)}")
@@ -131,8 +151,18 @@ def ingest_github_file(
 
     total_graph_entities = 0
     total_graph_relationships = 0
+    total_vector_chunks = 0
+    embedding_dimensions = None
 
     for index, chunk in enumerate(chunks):
+
+        if checkpoint:
+            checkpoint(
+                "extracting_knowledge",
+                "Extracting knowledge with AI",
+                chunk_current=index + 1,
+                chunks_total=len(chunks),
+            )
 
         print(
             f"\nPROCESSING CHUNK "
@@ -157,6 +187,8 @@ def ingest_github_file(
         # 2. Store knowledge in Neo4j
         # --------------------------------
 
+        if checkpoint:
+            checkpoint("storing_graph", "Storing knowledge graph")
         graph_result = store_knowledge(knowledge)
 
         total_graph_entities += graph_result[
@@ -176,17 +208,21 @@ def ingest_github_file(
             f"{file_path}:chunk:{index}"
         )
 
-        store_document(
+        if checkpoint:
+            checkpoint("indexing", "Indexing repository file")
+        vector_result = add_chunks(
+            chunks=[chunk],
             document_id=chunk_id,
-            text=chunk,
-            metadata={
-                "source": "github",
+            filename=file_path,
+            entity_ids=[entity["id"] for entity in knowledge.get("entities", [])],
+            source_type="github",
+            extra_metadata={
                 "repo": repo_name,
-                "type": "CODE",
                 "file": file_path,
-                "chunk": index,
-            }
+            },
         )
+        total_vector_chunks += vector_result["vector_chunks"]
+        embedding_dimensions = vector_result["embedding_dimensions"]
 
     return {
         "repository": repo_name,
@@ -196,18 +232,24 @@ def ingest_github_file(
         "graph": {
             "entities_created": total_graph_entities,
             "relationships_created": total_graph_relationships,
-        }
+        },
+        "vector_chunks": total_vector_chunks,
+        "embedding_dimensions": embedding_dimensions,
     }
 
 
 def ingest_github_repository(
     repo_name: str,
+    checkpoint=None,
 ):
     """
     Ingest all useful files from a GitHub repository.
     """
 
     repo = github.get_repo(repo_name)
+
+    if checkpoint:
+        checkpoint("discovering_files", "Finding supported repository files")
 
     contents = repo.get_contents("")
 
@@ -254,9 +296,22 @@ def ingest_github_repository(
         f"\nFOUND {len(files)} USEFUL FILES"
     )
 
+    if checkpoint:
+        checkpoint("processing_files", "Processing repository files", files_total=len(files), files_processed=0)
+
     results = []
 
     for index, file_path in enumerate(files):
+
+        if checkpoint:
+            checkpoint(
+                "processing_file",
+                "Processing repository file",
+                current_file=file_path,
+                files_current=index + 1,
+                files_total=len(files),
+                files_processed=len(results),
+            )
 
         print(
             f"\n=============================="
@@ -268,10 +323,22 @@ def ingest_github_repository(
 
             result = ingest_github_file(
                 repo_name,
-                file_path
+                file_path,
+                checkpoint=checkpoint,
+                repo=repo,
             )
 
             results.append(result)
+
+            if checkpoint:
+                checkpoint(
+                    "processing_file",
+                    "Repository file indexed",
+                    current_file=file_path,
+                    files_current=index + 1,
+                    files_total=len(files),
+                    files_processed=len(results),
+                )
 
         except Exception as exc:
 

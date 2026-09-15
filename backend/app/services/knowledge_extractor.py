@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 
 from app.services.ai_client import generate_json
@@ -7,6 +8,9 @@ from app.services.knowledge_schema import (
     ALLOWED_RELATIONSHIP_TYPES,
     RELATIONSHIP_TYPE_ALIASES,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 EXTRACTION_PROMPT = """
@@ -33,7 +37,8 @@ Event, Decision, PullRequest, Issue, Certification, Document
 
 Allowed relationship types:
 PROPOSED, DISCUSSED_IN, USES, RELATED_TO, IMPLEMENTED_BY, MADE_BY,
-WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN, AFFILIATED_WITH, ATTENDED, EARNED
+WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN, AFFILIATED_WITH, ATTENDED, EARNED,
+PROVIDES
 
 For certifications:
 Person -> EARNED -> Certification
@@ -51,6 +56,9 @@ Rules:
 - Add Technology only when it is central to demonstrated work or a
   certification.
 - Do not create an entity for every listed skill or tool.
+- Do not create an entity for a section heading, category label, or document
+    structure marker (e.g. "Education", "Agenda", "Action Items", "Summary").
+    Extract the specific named entity described by the surrounding text instead.
 - Maximum 40 total entities.
 - Maximum 20 Technology entities.
 - Maximum 60 relationships.
@@ -180,6 +188,51 @@ def extract_json_object(response: str) -> dict:
     return data
 
 
+def _normalize_extraction_data(data: dict) -> dict:
+    """Map common model omissions and name-based references to our schema."""
+    if not isinstance(data, dict) or "entities" not in data or "relationships" not in data:
+        return data
+    if not isinstance(data["entities"], list) or not isinstance(data["relationships"], list):
+        return data
+
+    entities = []
+    name_to_id = {}
+    for index, raw_entity in enumerate(data["entities"], start=1):
+        if not isinstance(raw_entity, dict):
+            entities.append(raw_entity)
+            continue
+        name = str(raw_entity.get("name", "")).strip()
+        entity_id = str(raw_entity.get("id") or f"e{index}").strip()
+        entity_type = str(raw_entity.get("type", "")).strip()
+        if not name or not entity_type:
+            continue
+        entities.append({"id": entity_id, "type": entity_type, "name": name})
+        if name:
+            name_to_id[name.casefold()] = entity_id
+        name_to_id[entity_id.casefold()] = entity_id
+
+    relationships = []
+    for raw_relationship in data["relationships"]:
+        if not isinstance(raw_relationship, dict):
+            relationships.append(raw_relationship)
+            continue
+        source = str(raw_relationship.get("source", "")).strip()
+        target = str(raw_relationship.get("target", "")).strip()
+        relationship_type = str(raw_relationship.get("type", "")).strip().upper().replace(" ", "_").replace("-", "_")
+        relationship_type = RELATIONSHIP_TYPE_ALIASES.get(relationship_type, relationship_type)
+        normalized_source = name_to_id.get(source.casefold())
+        normalized_target = name_to_id.get(target.casefold())
+        if not normalized_source or not normalized_target or not relationship_type:
+            continue
+        relationships.append({
+            "source": normalized_source,
+            "type": relationship_type,
+            "target": normalized_target,
+        })
+
+    return {"entities": entities, "relationships": relationships}
+
+
 def extract_knowledge(text: str) -> dict:
     """
     Extract and validate entities and relationships from document text.
@@ -189,7 +242,7 @@ def extract_knowledge(text: str) -> dict:
 
     response = generate_json(prompt).strip()
 
-    data = extract_json_object(response)
+    data = _normalize_extraction_data(extract_json_object(response))
 
     # --------------------------------------------------
     # Validate top-level object
@@ -309,10 +362,8 @@ def extract_knowledge(text: str) -> dict:
         )
 
         if relationship_type not in ALLOWED_RELATIONSHIP_TYPES:
-            raise ValueError(
-                f"Invalid relationship type: "
-                f"{relationship_type}"
-            )
+            logger.warning("Dropping relationship with unknown type: %s", relationship_type)
+            continue
 
         # Store canonical relationship type.
         relationship["type"] = relationship_type

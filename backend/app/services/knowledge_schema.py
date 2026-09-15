@@ -30,9 +30,13 @@ ALLOWED_RELATIONSHIP_TYPES = {
     "AFFILIATED_WITH",
     "ATTENDED",
     "EARNED",
+    "PROVIDES",
 }
 
 # Explicit model aliases are normalized before strict relationship validation.
 RELATIONSHIP_TYPE_ALIASES = {
     "EARNED_BY": "EARNED",
+    "WORKED ON": "WORKED_ON",
+    "OFFERS": "PROVIDES",
+    "SUPPORTS": "PROVIDES",
 }

@@ -1,7 +1,7 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
-from app.database.chroma import search_chunks
+from app.services.rag import answer_query
 
 
 router = APIRouter(
@@ -11,16 +11,14 @@ router = APIRouter(
 
 
 class QueryRequest(BaseModel):
-    question: str
-    n_results: int = 5
+    question: str = Field(min_length=1, max_length=2000)
+    n_results: int = Field(default=5, ge=1, le=5)
 
 
 @router.post("")
 def query_documents(request: QueryRequest):
 
-    results = search_chunks(
-        query=request.question,
-        n_results=request.n_results
-    )
-
-    return results
+    try:
+        return answer_query(request.question, n_results=request.n_results)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"RAG query failed: {exc}") from exc

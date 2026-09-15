@@ -7,6 +7,7 @@ from app.config import (
     NEO4J_USERNAME,
     NEO4J_PASSWORD,
     NEO4J_DATABASE,
+    NEO4J_CONNECTION_TIMEOUT_SECONDS,
 )
 
 os.environ["SSL_CERT_FILE"] = certifi.where()
@@ -14,6 +15,7 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 driver = GraphDatabase.driver(
     NEO4J_URI,
     auth=(NEO4J_USERNAME, NEO4J_PASSWORD),
+    connection_timeout=NEO4J_CONNECTION_TIMEOUT_SECONDS,
 )
 
 
