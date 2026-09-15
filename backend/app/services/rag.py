@@ -10,7 +10,7 @@ from app.services.retrieval import retrieve_documents
 
 MAX_DOCUMENTS = 5
 MAX_CONTEXT_CHARS = 14_000
-MAX_GRAPH_RECORDS = 20
+MAX_RAW_GRAPH_RECORDS = 200
 MAX_EVIDENCE_CHARS = 800
 STOP_WORDS = {"what", "when", "where", "which", "this", "that", "from", "with", "does", "have", "about"}
 SUBSTANTIVE_ENTITY_TYPES = {
@@ -55,18 +55,18 @@ def _retrieve_graph_context(entity_ids: list[str]) -> list[dict]:
     # grounded in the local vector index.
     for entity_id in entity_ids:
         try:
-            records.extend(search_graph_by_id(entity_id))
+            records.extend(search_graph_by_id(entity_id, limit=MAX_RAW_GRAPH_RECORDS))
         except Exception:
             # Do not retry every entity when the graph service itself is down.
             break
-        if len(records) >= MAX_GRAPH_RECORDS:
+        if len(records) >= MAX_RAW_GRAPH_RECORDS:
             break
     return [
         record
         for record in records
         if not _is_generic_entity(record.get("entity") or {}, record.get("entity_labels"))
         and not _is_generic_entity(record.get("connected_entity") or {}, record.get("connected_labels"))
-    ][:MAX_GRAPH_RECORDS]
+    ][:MAX_RAW_GRAPH_RECORDS]
 
 
 def _relevant_documents(documents: list[dict]) -> list[dict]:
@@ -166,7 +166,35 @@ def _lexically_relevant(documents: list[dict], query: str) -> list[dict]:
         for document in documents
         if any(term in document.get("text", "").lower() for term in terms)
     ]
-    return matching or documents
+    return matching or documents[:1]
+
+
+def _graph_entity_text(entity: dict) -> str:
+    return " ".join(
+        str(entity.get(field, ""))
+        for field in ("name", "title", "number", "id")
+        if entity.get(field)
+    )
+
+
+def _graph_record_is_relevant(record: dict, query: str, evidence_text: str) -> bool:
+    relevant_terms = set(_query_terms(query)) | _content_tokens(evidence_text)
+    if not relevant_terms:
+        return False
+    for key in ("entity", "connected_entity"):
+        entity_terms = _content_tokens(_graph_entity_text(record.get(key) or {}))
+        if entity_terms & relevant_terms:
+            return True
+    return False
+
+
+def _filter_relevant_graph_records(records: list[dict], query: str, documents: list[dict]) -> list[dict]:
+    evidence_text = "\n".join(document.get("text", "") for document in documents)
+    return [
+        record
+        for record in records
+        if _graph_record_is_relevant(record, query, evidence_text)
+    ]
 
 
 def build_context(query: str, n_results: int = MAX_DOCUMENTS) -> tuple[str, list[dict], list[dict]]:
@@ -177,6 +205,7 @@ def build_context(query: str, n_results: int = MAX_DOCUMENTS) -> tuple[str, list
     documents = _deduplicate_by_source(documents)
     documents = _drop_near_duplicates(documents)[:limit]
     graph_records = _retrieve_graph_context(extract_entity_ids(documents))
+    graph_records = _filter_relevant_graph_records(graph_records, query, documents)
 
     parts = []
     used_chars = 0
@@ -301,6 +330,7 @@ def _related(graph_records: list[dict]) -> dict[str, list[str]]:
         "Decision": "decisions",
         "PullRequest": "pullRequests",
     }
+    assigned_names = set()
     for record in graph_records:
         for key, labels_key in (("entity", "entity_labels"), ("connected_entity", "connected_labels")):
             entity = record.get(key) or {}
@@ -309,8 +339,9 @@ def _related(graph_records: list[dict]) -> dict[str, list[str]]:
                 labels = [labels]
             target = next((type_map.get(label) for label in labels or [] if label in type_map), None)
             name = _entity_name(entity)
-            if target and name != "Unknown" and name not in related[target]:
+            if target and name != "Unknown" and name not in assigned_names:
                 related[target].append(name)
+                assigned_names.add(name)
     return related
 
 
