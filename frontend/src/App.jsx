@@ -6,6 +6,7 @@ import CommandPalette from './components/layout/CommandPalette';
 import DecisionDetailModal from './components/knowledge/DecisionDetailModal';
 import { DecisionModalProvider } from './context/DecisionModalContext';
 import { SourceIngestionProvider } from './context/SourceIngestionContext';
+import { ProjectProvider } from './context/ProjectContext';
 import Dashboard from './pages/Dashboard';
 import Decisions from './pages/Decisions';
 import DecisionDetailPage from './pages/DecisionDetailPage';
@@ -33,8 +34,9 @@ function ProtectedApp() {
   return (
     <>
       <SignedIn>
-        <DecisionModalProvider>
-          <SourceIngestionProvider>
+        <ProjectProvider>
+          <DecisionModalProvider>
+            <SourceIngestionProvider>
             <div className="app-shell">
               <Sidebar />
               <main className="app-main">
@@ -51,8 +53,9 @@ function ProtectedApp() {
             </div>
             <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
             <DecisionDetailModal />
-          </SourceIngestionProvider>
-        </DecisionModalProvider>
+            </SourceIngestionProvider>
+          </DecisionModalProvider>
+        </ProjectProvider>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />

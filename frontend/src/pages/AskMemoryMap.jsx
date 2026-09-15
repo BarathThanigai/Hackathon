@@ -10,6 +10,7 @@ import EntityCard from '../components/knowledge/EntityCard';
 import ReconstructionDiagram from '../components/graph/ReconstructionDiagram';
 import { askQuestion, resolveDecision, resolveGraphEntity } from '../services/api';
 import { suggestedQuestions } from '../data/mockData';
+import { useProject } from '../context/ProjectContext';
 import './AskMemoryMap.css';
 
 const LOADING_STEPS = ['Searching evidence', 'Connecting relationships', 'Synthesizing explanation'];
@@ -21,13 +22,14 @@ export default function AskMemoryMap() {
   const [status, setStatus] = useState('idle'); // idle | loading | answered | error
   const [answer, setAnswer] = useState(null);
   const submittedOnce = useRef(false);
+  const { project } = useProject();
 
   const runQuery = (q) => {
     const trimmed = (q || question).trim();
     if (!trimmed) return;
     setQuestion(trimmed);
     setStatus('loading');
-    askQuestion(trimmed)
+    askQuestion(trimmed, project.id)
       .then((res) => {
         setAnswer(res);
         setStatus('answered');
@@ -55,6 +57,7 @@ export default function AskMemoryMap() {
       title="Ask MemoryMap"
       subtitle="Reconstruct the context behind your organization's decisions."
     >
+      <div className="ask-project-context mono">CONTEXT: {project.name}</div>
       <form className="ask-bar" onSubmit={submit}>
         <input
           className="ask-bar-input"

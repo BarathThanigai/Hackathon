@@ -1,25 +1,27 @@
 import { SignIn, SignUp } from '@clerk/clerk-react';
-import './AuthPage.css';
+import AbstractConnection from '../../../src/components/AbstractConnection.tsx';
+import { Logo } from '../../../src/components/ui.tsx';
+import '../../../src/index.css';
 
 export default function AuthPage({ mode }) {
   const isSignIn = mode === 'sign-in';
 
   return (
-    <main className="auth-page">
-      <section className="auth-intro">
-        <div className="auth-brand"><span>◇</span> MemoryMap</div>
-        <div>
-          <p className="auth-eyebrow">ORGANIZATIONAL INTELLIGENCE</p>
-          <h1>Make knowledge<br />easy to find.</h1>
-          <p className="auth-copy">Capture documents, reveal relationships, and keep your team's context connected.</p>
+    <main className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] bg-ink">
+      <section className="relative hidden flex-col justify-between overflow-hidden border-r border-line bg-panel p-10 lg:flex">
+        <div className="grid-bg pointer-events-none absolute inset-0 opacity-50" />
+        <div className="relative"><Logo /></div>
+        <div className="relative -mx-4 h-[440px]"><AbstractConnection /></div>
+        <div className="relative max-w-xs">
+          <p className="mono text-[10px] uppercase tracking-widest text-teal">{isSignIn ? '// resume session' : '// map your knowledge'}</p>
+          <h1 className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-fg">{isSignIn ? 'Your knowledge, connected and always in reach.' : 'Turn scattered information into a living knowledge graph.'}</h1>
         </div>
       </section>
-      <section className="auth-card-wrap">
-        {isSignIn ? (
-          <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/" />
-        ) : (
-          <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/" />
-        )}
+      <section className="flex items-center justify-center bg-ink px-6 py-10 sm:px-10">
+        <div className="w-full max-w-[420px]">
+          <div className="mb-8 lg:hidden"><Logo /></div>
+          {isSignIn ? <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/app" /> : <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/app" />}
+        </div>
       </section>
     </main>
   );

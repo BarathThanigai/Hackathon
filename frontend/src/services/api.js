@@ -56,11 +56,11 @@ function normaliseQueryResponse(question, payload) {
   };
 }
 
-export async function askQuestion(question) {
+export async function askQuestion(question, projectId = 'all') {
   const res = await fetch(`${BASE_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, project_id: projectId }),
   });
   if (!res.ok) throw new Error('Query failed');
   return normaliseQueryResponse(question, await res.json());
