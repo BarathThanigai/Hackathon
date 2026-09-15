@@ -4,28 +4,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # =========================
-# MemoryMap AI Configuration
+# Gemini AI Configuration
 # =========================
 
-MEMORYMAP_AI_PROVIDER = os.getenv(
-    "MEMORYMAP_AI_PROVIDER",
-    "nvidia"
-)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-MEMORYMAP_AI_API_KEY = os.getenv("MEMORYMAP_AI_API_KEY")
-
-MEMORYMAP_AI_BASE_URL = os.getenv(
-    "MEMORYMAP_AI_BASE_URL",
-    "https://integrate.api.nvidia.com/v1"
-)
-
-MEMORYMAP_AI_MODEL = os.getenv(
-    "MEMORYMAP_AI_MODEL",
-    "nvidia/nemotron-3.5-lightning-30b-a3b"
-)
-
-MEMORYMAP_AI_TIMEOUT_SECONDS = int(
-    os.getenv("MEMORYMAP_AI_TIMEOUT_SECONDS", "180")
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    "gemini-3.8-flash"
 )
 
 # =========================
@@ -36,7 +22,6 @@ MEMORYMAP_EMBEDDING_MODEL = os.getenv(
     "MEMORYMAP_EMBEDDING_MODEL",
     "nvidia/nemotron-3-embed-1b"
 )
-
 
 # =========================
 # Neo4j Configuration

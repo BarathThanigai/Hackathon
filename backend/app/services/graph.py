@@ -10,18 +10,26 @@ ALLOWED_RELATIONSHIPS = ALLOWED_RELATIONSHIP_TYPES
 
 
 def store_knowledge(knowledge: dict):
-    entities = knowledge.get("entities", [])
-    relationships = knowledge.get("relationships", [])
+    entities = knowledge.get(
+        "entities",
+        []
+    )
+
+    relationships = knowledge.get(
+        "relationships",
+        []
+    )
 
     with get_session() as session:
 
-        # -------------------------
-        # 1. CREATE ENTITIES
-        # -------------------------
+        # --------------------------------------------------
+        # 1. CREATE / MERGE ENTITIES
+        # --------------------------------------------------
 
         entity_map = {}
 
         for entity in entities:
+
             entity_id = entity["id"]
             entity_type = entity["type"]
             entity_name = entity["name"]
@@ -29,26 +37,28 @@ def store_knowledge(knowledge: dict):
             if entity_type not in ALLOWED_LABELS:
                 continue
 
-            # Store mapping from AI ID -> Neo4j node information
             entity_map[entity_id] = {
                 "type": entity_type,
                 "name": entity_name,
             }
 
             query = f"""
-            MERGE (n:{entity_type} {{name: $name}})
-            SET n.id = $id
+            MERGE (n:{entity_type} {{id: $id}})
+            ON CREATE SET
+                n.name = $name
+            ON MATCH SET
+                n.name = coalesce(n.name, $name)
             """
 
             session.run(
                 query,
-                name=entity_name,
                 id=entity_id,
+                name=entity_name,
             )
 
-        # -------------------------
-        # 2. CREATE RELATIONSHIPS
-        # -------------------------
+        # --------------------------------------------------
+        # 2. CREATE / MERGE RELATIONSHIPS
+        # --------------------------------------------------
 
         for relationship in relationships:
 
@@ -69,15 +79,15 @@ def store_knowledge(knowledge: dict):
             target = entity_map[target_id]
 
             query = f"""
-            MATCH (a:{source["type"]} {{name: $source_name}})
-            MATCH (b:{target["type"]} {{name: $target_name}})
+            MATCH (a:{source["type"]} {{id: $source_id}})
+            MATCH (b:{target["type"]} {{id: $target_id}})
             MERGE (a)-[:{relationship_type}]->(b)
             """
 
             session.run(
                 query,
-                source_name=source["name"],
-                target_name=target["name"],
+                source_id=source_id,
+                target_id=target_id,
             )
 
     return {

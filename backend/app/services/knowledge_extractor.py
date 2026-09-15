@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 
@@ -13,37 +14,47 @@ EXTRACTION_PROMPT = """
 You are a knowledge graph extraction API.
 
 Return exactly one minified JSON object:
+
 {"entities":[...],"relationships":[...]}
 
 No markdown, prose, reasoning, code fences, or fields beyond that shape.
 
 Each entity must be exactly:
+
 {"id":"e1","type":"Type","name":"short source name"}
 
 Each relationship must be exactly:
+
 {"source":"e1","type":"RELATED_TO","target":"e2"}
 
 Use short sequential IDs (e1, e2, ...).
+
 Use concise source names.
+
 Do not include descriptions.
 
 Allowed entity types:
+
 Person, Organization, Institution, Technology, Service, Project, Meeting,
 Event, Decision, PullRequest, Issue, Certification, Document
 
 Allowed relationship types:
+
 PROPOSED, DISCUSSED_IN, USES, RELATED_TO, IMPLEMENTED_BY, MADE_BY,
-WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN, AFFILIATED_WITH, ATTENDED, EARNED
+WORKED_ON, CAUSED_BY, AFFECTS, MENTIONED_IN, AFFILIATED_WITH,
+ATTENDED, EARNED
 
 For certifications:
+
 Person -> EARNED -> Certification
 
 Never use EARNED_BY.
 
 Rules:
+
 - Extract only explicitly mentioned entities.
-- Extract only relationships explicitly supported by the document.
-- Reuse the same ID for the same entity.
+- Extract only relationships explicitly supported by the text.
+- Reuse the same ID for the same entity within this extraction.
 - Every relationship source and target must reference an existing entity.
 - Do not invent entities or relationships.
 - For resumes, prioritize the person, organizations, institutions,
@@ -56,27 +67,24 @@ Rules:
 - Maximum 60 relationships.
 
 If nothing qualifies:
+
 {"entities":[],"relationships":[]}
 
-DOCUMENT:
+TEXT:
 """
 
 
 JSON_FENCE_PATTERN = re.compile(
-    r"```(?:json)?[ \t]*\n(?P<body>[\s\S]*?)\n```",
-    re.IGNORECASE,
+    r"^```(?:json)?\s*(?P<body>.*?)\s*```$",
+    re.DOTALL | re.IGNORECASE,
 )
 
 
 def _unwrap_json_fence(response: str) -> str:
-    """
-    Accept a single Markdown JSON fence, but reject surrounding prose.
-    """
+    """Accept a single Markdown JSON fence."""
     match = JSON_FENCE_PATTERN.fullmatch(response)
-
     if match:
         return match.group("body")
-
     return response
 
 
@@ -84,9 +92,7 @@ def _remove_trailing_commas(response: str) -> str:
     """
     Remove commas immediately before ] or } outside JSON strings.
     """
-
-    normalized = []
-
+    result = []
     in_string = False
     escaped = False
     index = 0
@@ -94,47 +100,39 @@ def _remove_trailing_commas(response: str) -> str:
     while index < len(response):
         char = response[index]
 
-        if in_string:
-            normalized.append(char)
+        if char == '"' and not escaped:
+            in_string = not in_string
 
-            if escaped:
-                escaped = False
-
-            elif char == "\\":
-                escaped = True
-
-            elif char == '"':
-                in_string = False
-
-            index += 1
-            continue
-
-        if char == '"':
-            in_string = True
-            normalized.append(char)
-            index += 1
-            continue
-
-        if char == ",":
-            next_index = index + 1
+        if (
+            not in_string
+            and char == ","
+        ):
+            lookahead = index + 1
 
             while (
-                next_index < len(response)
-                and response[next_index].isspace()
+                lookahead < len(response)
+                and response[lookahead].isspace()
             ):
-                next_index += 1
+                lookahead += 1
 
             if (
-                next_index < len(response)
-                and response[next_index] in "]}"
+                lookahead < len(response)
+                and response[lookahead] in "}]"
             ):
                 index += 1
+                escaped = False
                 continue
 
-        normalized.append(char)
+        result.append(char)
+
+        if char == "\\" and not escaped:
+            escaped = True
+        else:
+            escaped = False
+
         index += 1
 
-    return "".join(normalized)
+    return "".join(result)
 
 
 def extract_json_object(response: str) -> dict:
@@ -148,25 +146,17 @@ def extract_json_object(response: str) -> dict:
 
     Incomplete or malformed JSON is rejected.
     """
-
     if not isinstance(response, str) or not response.strip():
         raise ValueError(
             "AI extraction response must be a non-empty JSON object."
         )
 
     normalized_response = response.strip().lstrip("\ufeff")
-
-    normalized_response = _unwrap_json_fence(
-        normalized_response
-    )
-
-    normalized_response = _remove_trailing_commas(
-        normalized_response
-    )
+    normalized_response = _unwrap_json_fence(normalized_response)
+    normalized_response = _remove_trailing_commas(normalized_response)
 
     try:
         data = json.loads(normalized_response)
-
     except json.JSONDecodeError as exc:
         raise ValueError(
             "AI extraction response must contain only valid JSON."
@@ -180,78 +170,52 @@ def extract_json_object(response: str) -> dict:
     return data
 
 
-def extract_knowledge(text: str) -> dict:
+def _validate_extraction(data: dict) -> dict:
     """
-    Extract and validate entities and relationships from document text.
+    Validate one NVIDIA extraction response.
     """
-
-    prompt = EXTRACTION_PROMPT + "\n" + text
-
-    response = generate_json(prompt).strip()
-
-    data = extract_json_object(response)
-
-    # --------------------------------------------------
-    # Validate top-level object
-    # --------------------------------------------------
-
-    if set(data.keys()) != {
-        "entities",
-        "relationships",
-    }:
+    if set(data.keys()) != {"entities", "relationships"}:
         raise ValueError(
-            "AI response must contain exactly "
+            "AI extraction response must contain exactly "
             "'entities' and 'relationships'."
         )
 
     if not isinstance(data["entities"], list):
         raise ValueError(
-            "'entities' must be a list."
+            "AI extraction 'entities' must be a list."
         )
 
     if not isinstance(data["relationships"], list):
         raise ValueError(
-            "'relationships' must be a list."
+            "AI extraction 'relationships' must be a list."
         )
-
-    # --------------------------------------------------
-    # Validate entities
-    # --------------------------------------------------
 
     entity_ids = set()
 
     for entity in data["entities"]:
-
         if not isinstance(entity, dict):
             raise ValueError(
-                f"Invalid entity: {entity}"
+                "Each entity must be a JSON object."
             )
 
-        if set(entity) != {
-            "id",
-            "type",
-            "name",
-        }:
+        if set(entity.keys()) != {"id", "type", "name"}:
             raise ValueError(
-                f"Invalid entity structure: {entity}"
-            )
-
-        if entity["type"] not in ALLOWED_ENTITY_TYPES:
-            raise ValueError(
-                f"Invalid entity type: {entity['type']}"
+                "Each entity must contain exactly "
+                "'id', 'type', and 'name'."
             )
 
         if not all(
             isinstance(entity[key], str)
             and entity[key].strip()
-            for key in (
-                "id",
-                "type",
-                "name",
-            )
+            for key in ("id", "type", "name")
         ):
             raise ValueError(
-                f"Invalid entity values: {entity}"
+                "Entity id, type, and name must be non-empty strings."
+            )
+
+        if entity["type"] not in ALLOWED_ENTITY_TYPES:
+            raise ValueError(
+                f"Invalid entity type: {entity['type']}"
             )
 
         if entity["id"] in entity_ids:
@@ -261,42 +225,31 @@ def extract_knowledge(text: str) -> dict:
 
         entity_ids.add(entity["id"])
 
-    # --------------------------------------------------
-    # Validate relationships
-    # --------------------------------------------------
-
     for relationship in data["relationships"]:
-
         if not isinstance(relationship, dict):
             raise ValueError(
-                f"Invalid relationship: {relationship}"
+                "Each relationship must be a JSON object."
             )
 
-        if set(relationship) != {
+        if set(relationship.keys()) != {
             "source",
             "type",
             "target",
         }:
             raise ValueError(
-                f"Invalid relationship structure: {relationship}"
+                "Each relationship must contain exactly "
+                "'source', 'type', and 'target'."
             )
 
         if not all(
             isinstance(relationship[key], str)
             and relationship[key].strip()
-            for key in (
-                "source",
-                "type",
-                "target",
-            )
+            for key in ("source", "type", "target")
         ):
             raise ValueError(
-                f"Invalid relationship values: {relationship}"
+                "Relationship source, type, and target "
+                "must be non-empty strings."
             )
-
-        # --------------------------------------------------
-        # Normalize common LLM-generated aliases
-        # --------------------------------------------------
 
         relationship_type = RELATIONSHIP_TYPE_ALIASES.get(
             relationship["type"],
@@ -305,27 +258,233 @@ def extract_knowledge(text: str) -> dict:
 
         if relationship_type not in ALLOWED_RELATIONSHIP_TYPES:
             raise ValueError(
-                f"Invalid relationship type: "
-                f"{relationship_type}"
+                f"Invalid relationship type: {relationship_type}"
             )
 
-        # Store canonical relationship type.
         relationship["type"] = relationship_type
-
-        # --------------------------------------------------
-        # Validate relationship references
-        # --------------------------------------------------
 
         if relationship["source"] not in entity_ids:
             raise ValueError(
-                f"Unknown relationship source: "
+                f"Relationship source does not exist: "
                 f"{relationship['source']}"
             )
 
         if relationship["target"] not in entity_ids:
             raise ValueError(
-                f"Unknown relationship target: "
+                f"Relationship target does not exist: "
                 f"{relationship['target']}"
             )
 
     return data
+
+
+def extract_knowledge(text: str) -> dict:
+    """
+    Extract knowledge from a single manageable text chunk.
+
+    This function intentionally handles only one chunk.
+    Larger documents should use extract_knowledge_from_chunks().
+    """
+    if not isinstance(text, str) or not text.strip():
+        return {
+            "entities": [],
+            "relationships": [],
+        }
+
+    prompt = EXTRACTION_PROMPT + "\n" + text
+
+    response = generate_json(prompt).strip()
+
+    print("\n========== RAW AI RESPONSE ==========")
+    print(response)
+    print("====================================\n")
+
+    data = extract_json_object(response)
+
+    return _validate_extraction(data)
+
+
+def _normalize_entity_name(name: str) -> str:
+    """
+    Normalize an entity name for deduplication.
+    """
+    normalized = name.strip().lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
+
+
+def _entity_key(entity_type: str, name: str) -> str:
+    """
+    Create a canonical identity key for an entity.
+    """
+    return (
+        f"{entity_type.strip().lower()}:"
+        f"{_normalize_entity_name(name)}"
+    )
+
+
+def _stable_entity_id(entity_type: str, name: str) -> str:
+    """
+    Create a deterministic ID from entity type + normalized name.
+
+    The same entity appearing in multiple documents/chunks will
+    therefore receive the same ID.
+    """
+    key = _entity_key(entity_type, name)
+
+    digest = hashlib.sha256(
+        key.encode("utf-8")
+    ).hexdigest()[:24]
+
+    return f"entity_{digest}"
+
+
+def merge_knowledge(extractions: list[dict]) -> dict:
+    """
+    Merge multiple chunk-level extraction results.
+
+    Local AI IDs such as e1/e2 are replaced with stable canonical IDs.
+    Duplicate entities and relationships are removed.
+    """
+
+    canonical_entities = {}
+    canonical_relationships = set()
+
+    for extraction in extractions:
+        local_to_canonical = {}
+
+        for entity in extraction.get("entities", []):
+            entity_type = entity["type"].strip()
+            entity_name = entity["name"].strip()
+
+            key = _entity_key(
+                entity_type,
+                entity_name,
+            )
+
+            stable_id = _stable_entity_id(
+                entity_type,
+                entity_name,
+            )
+
+            if key not in canonical_entities:
+                canonical_entities[key] = {
+                    "id": stable_id,
+                    "type": entity_type,
+                    "name": entity_name,
+                }
+
+            local_to_canonical[entity["id"]] = (
+                canonical_entities[key]["id"]
+            )
+
+        for relationship in extraction.get(
+            "relationships",
+            [],
+        ):
+            source_local_id = relationship["source"]
+            target_local_id = relationship["target"]
+
+            source_id = local_to_canonical.get(
+                source_local_id
+            )
+
+            target_id = local_to_canonical.get(
+                target_local_id
+            )
+
+            if not source_id or not target_id:
+                continue
+
+            relationship_type = RELATIONSHIP_TYPE_ALIASES.get(
+                relationship["type"],
+                relationship["type"],
+            )
+
+            if relationship_type not in ALLOWED_RELATIONSHIP_TYPES:
+                continue
+
+            canonical_relationships.add(
+                (
+                    source_id,
+                    relationship_type,
+                    target_id,
+                )
+            )
+
+    relationships = [
+        {
+            "source": source_id,
+            "type": relationship_type,
+            "target": target_id,
+        }
+        for (
+            source_id,
+            relationship_type,
+            target_id,
+        ) in sorted(canonical_relationships)
+    ]
+
+    return {
+        "entities": list(canonical_entities.values()),
+        "relationships": relationships,
+    }
+
+
+def extract_knowledge_from_chunks(
+    chunks: list[str],
+) -> dict:
+    """
+    Extract knowledge from multiple manageable chunks
+    and merge/deduplicate the results.
+    """
+    extractions = []
+
+    for index, chunk in enumerate(chunks):
+        if not chunk.strip():
+            continue
+
+        print(
+            f"\n========== EXTRACTING CHUNK "
+            f"{index + 1}/{len(chunks)} =========="
+        )
+
+        extraction = extract_knowledge(chunk)
+
+        extractions.append(extraction)
+
+    return merge_knowledge(extractions)
+
+
+def extract_chunk_knowledge(
+    chunks: list[str],
+) -> list[dict]:
+    """
+    Extract knowledge independently for each chunk.
+
+    The returned list preserves chunk boundaries so the caller
+    can associate canonical entity IDs with the correct
+    ChromaDB chunks.
+    """
+    results = []
+
+    for index, chunk in enumerate(chunks):
+        if not chunk.strip():
+            results.append(
+                {
+                    "entities": [],
+                    "relationships": [],
+                }
+            )
+            continue
+
+        print(
+            f"\n========== EXTRACTING CHUNK "
+            f"{index + 1}/{len(chunks)} =========="
+        )
+
+        results.append(
+            extract_knowledge(chunk)
+        )
+
+    return results
