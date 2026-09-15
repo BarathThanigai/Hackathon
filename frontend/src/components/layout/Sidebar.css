@@ -111,6 +111,12 @@
   padding: 10px;
 }
 
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .sidebar-footer-name {
   font-size: var(--text-sm);
   color: var(--text-secondary);

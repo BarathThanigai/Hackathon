@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
 import Sidebar from './components/layout/Sidebar';
 import CommandPalette from './components/layout/CommandPalette';
 import DecisionDetailModal from './components/knowledge/DecisionDetailModal';
@@ -12,8 +13,9 @@ import AskMemoryMap from './pages/AskMemoryMap';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 import Sources from './pages/Sources';
 import KnowledgeRisk from './pages/KnowledgeRisk';
+import AuthPage from './pages/AuthPage';
 
-export default function App() {
+function ProtectedApp() {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -29,27 +31,42 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <DecisionModalProvider>
-        <SourceIngestionProvider>
-          <div className="app-shell">
-            <Sidebar />
-            <main className="app-main">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/ask" element={<AskMemoryMap />} />
-                <Route path="/decisions" element={<Decisions />} />
-                <Route path="/decisions/:id" element={<DecisionDetailPage />} />
-                <Route path="/graph" element={<KnowledgeGraphPage />} />
-                <Route path="/sources" element={<Sources />} />
-                <Route path="/risk" element={<KnowledgeRisk />} />
-              </Routes>
-            </main>
-          </div>
-          <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-          <DecisionDetailModal />
-        </SourceIngestionProvider>
-      </DecisionModalProvider>
-    </BrowserRouter>
+    <>
+      <SignedIn>
+        <DecisionModalProvider>
+          <SourceIngestionProvider>
+            <div className="app-shell">
+              <Sidebar />
+              <main className="app-main">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/ask" element={<AskMemoryMap />} />
+                  <Route path="/decisions" element={<Decisions />} />
+                  <Route path="/decisions/:id" element={<DecisionDetailPage />} />
+                  <Route path="/graph" element={<KnowledgeGraphPage />} />
+                  <Route path="/sources" element={<Sources />} />
+                  <Route path="/risk" element={<KnowledgeRisk />} />
+                </Routes>
+              </main>
+            </div>
+            <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+            <DecisionDetailModal />
+          </SourceIngestionProvider>
+        </DecisionModalProvider>
+      </SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
+      <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
+      <Route path="*" element={<ProtectedApp />} />
+    </Routes>
   );
 }

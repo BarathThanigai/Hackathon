@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -43,8 +44,13 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-footer">
-        <div className="sidebar-footer-name">MemoryMap</div>
-        <div className="sidebar-footer-sub">AI Organizational Memory</div>
+        <div className="sidebar-user">
+          <UserButton />
+          <div>
+            <div className="sidebar-footer-name">Your account</div>
+            <div className="sidebar-footer-sub">Manage profile</div>
+          </div>
+        </div>
       </div>
     </aside>
   );
