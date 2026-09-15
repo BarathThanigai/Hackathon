@@ -22,7 +22,7 @@ export default function KnowledgeGraphPage() {
       if (!active) return;
       setGraph(g);
       const hasRequestedEntity = g.nodes.some((node) => node.id === requestedEntityId);
-      setSelectedId(hasRequestedEntity ? requestedEntityId : 'redis');
+      setSelectedId(hasRequestedEntity ? requestedEntityId : g.nodes[0]?.id || null);
     });
 
     return () => {

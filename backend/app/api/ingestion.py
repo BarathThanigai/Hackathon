@@ -130,8 +130,8 @@ def _repository_name_from_url(url: str) -> str:
 
 
 def _process_document(document_id: str, file_path: Path, filename: str) -> None:
-    def checkpoint(name: str, label: str) -> None:
-        update_job(document_id, name, label)
+    def checkpoint(name: str, label: str, **details) -> None:
+        update_job(document_id, name, label, **details)
 
     try:
         result = ingest_document(

@@ -151,6 +151,8 @@ def ingest_github_file(
 
     total_graph_entities = 0
     total_graph_relationships = 0
+    total_vector_chunks = 0
+    embedding_dimensions = None
 
     for index, chunk in enumerate(chunks):
 
@@ -208,7 +210,7 @@ def ingest_github_file(
 
         if checkpoint:
             checkpoint("indexing", "Indexing repository file")
-        add_chunks(
+        vector_result = add_chunks(
             chunks=[chunk],
             document_id=chunk_id,
             filename=file_path,
@@ -219,6 +221,8 @@ def ingest_github_file(
                 "file": file_path,
             },
         )
+        total_vector_chunks += vector_result["vector_chunks"]
+        embedding_dimensions = vector_result["embedding_dimensions"]
 
     return {
         "repository": repo_name,
@@ -228,7 +232,9 @@ def ingest_github_file(
         "graph": {
             "entities_created": total_graph_entities,
             "relationships_created": total_graph_relationships,
-        }
+        },
+        "vector_chunks": total_vector_chunks,
+        "embedding_dimensions": embedding_dimensions,
     }
 
 

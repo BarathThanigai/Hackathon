@@ -56,11 +56,11 @@ function normaliseQueryResponse(question, payload) {
   };
 }
 
-export async function askQuestion(question) {
+export async function askQuestion(question, projectId = 'all') {
   const res = await fetch(`${BASE_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, project_id: projectId }),
   });
   if (!res.ok) throw new Error('Query failed');
   return normaliseQueryResponse(question, await res.json());
@@ -81,8 +81,9 @@ export async function fetchDecision(id) {
 }
 
 export async function fetchGraph() {
-  await delay(300);
-  return { nodes: graphNodes, edges: graphEdges, details: graphEntityDetails };
+  const res = await fetch(`${BASE_URL}/api/graph`);
+  if (!res.ok) throw new Error('Could not load knowledge graph');
+  return res.json();
 }
 
 export function resolveGraphEntity(label, expectedType) {
@@ -126,14 +127,49 @@ export async function uploadSource(file) {
     id: payload.document_id,
     name: payload.filename,
     kind: 'document',
-    status: 'complete',
-    steps: ['Uploaded', 'Text extracted', 'Chunked', 'Embedded', 'Added to knowledge graph'],
+    status: payload.status,
+    steps: payload.checkpoints,
+    checkpoint: payload.checkpoint,
+  };
+}
+
+export async function fetchIngestionStatus(documentId) {
+  const res = await fetch(`${BASE_URL}/api/ingestion/document/${documentId}`);
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload.detail || 'Could not load ingestion status');
+  return {
+    id: payload.id,
+    name: payload.filename,
+    kind: payload.kind || 'document',
+    status: payload.status === 'completed' ? 'complete' : payload.status === 'failed' ? 'error' : payload.status,
+    steps: payload.checkpoints || [],
+    checkpoint: payload.checkpoint,
+    error: payload.error,
+    currentFile: payload.current_file,
+    filesCurrent: payload.files_current,
+    filesTotal: payload.files_total,
+    chunksCurrent: payload.chunk_current,
+    chunksTotal: payload.chunks_total,
+    result: payload.result,
   };
 }
 
 export async function connectRepository(url) {
-  await delay(500);
-  return { connected: true, url };
+  const res = await fetch(`${BASE_URL}/api/ingestion/repository`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload.detail || 'Repository ingestion could not start');
+  return {
+    id: payload.document_id,
+    name: payload.filename,
+    kind: payload.kind || 'repository',
+    status: payload.status,
+    steps: payload.checkpoints,
+    checkpoint: payload.checkpoint,
+  };
 }
 
 export async function fetchRiskAreas() {
