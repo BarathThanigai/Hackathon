@@ -1,0 +1,10 @@
+{
+  "description": "MemoryMap empowers users to visualize and connect their knowledge through an interactive graph, enhancing discovery and understanding of complex information.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
