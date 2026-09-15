@@ -93,3 +93,5 @@ dist/
 *.temp
 
 *.zip
+
+chroma_data

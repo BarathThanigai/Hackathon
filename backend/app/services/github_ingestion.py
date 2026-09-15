@@ -1,7 +1,7 @@
 from app.services.github_service import github
 from app.services.knowledge_extractor import extract_knowledge
 from app.services.graph import store_knowledge
-from app.services.vector_store import store_document
+from app.database.chroma import add_chunks
 
 
 # Files worth ingesting into organizational memory.
@@ -208,16 +208,16 @@ def ingest_github_file(
 
         if checkpoint:
             checkpoint("indexing", "Indexing repository file")
-        store_document(
+        add_chunks(
+            chunks=[chunk],
             document_id=chunk_id,
-            text=chunk,
-            metadata={
-                "source": "github",
+            filename=file_path,
+            entity_ids=[entity["id"] for entity in knowledge.get("entities", [])],
+            source_type="github",
+            extra_metadata={
                 "repo": repo_name,
-                "type": "CODE",
                 "file": file_path,
-                "chunk": index,
-            }
+            },
         )
 
     return {
