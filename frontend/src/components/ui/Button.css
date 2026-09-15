@@ -34,7 +34,7 @@
   background: var(--accent-9);
   color: #0a0b0d;
 }
-.btn-primary:hover { background: #83a1f7; }
+.btn-primary:hover { background: #5eead4; box-shadow: 0 0 24px rgba(45, 212, 191, .3); }
 
 .btn-secondary {
   background: var(--bg-elevated);

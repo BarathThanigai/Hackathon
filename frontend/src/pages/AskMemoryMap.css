@@ -1,3 +1,15 @@
+.ask-project-context {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 6px 9px;
+  border: 1px solid rgba(45, 212, 191, .3);
+  border-radius: 999px;
+  color: var(--accent-9);
+  background: rgba(45, 212, 191, .07);
+  font-size: var(--text-xs);
+  letter-spacing: .08em;
+}
+
 .ask-bar {
   display: flex;
   gap: 10px;
