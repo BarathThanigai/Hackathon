@@ -5,8 +5,8 @@ from unittest.mock import patch
 from app.services.ai_client import ExtractionLimitError, generate_json
 from app import config
 from app.services.graph import ALLOWED_LABELS
-from app.services.knowledge_extractor import extract_json_object, extract_knowledge
-from app.services.ingestion_service import merge_knowledge_chunks
+from app.services.knowledge_extractor import _stable_entity_id, extract_json_object, extract_knowledge
+from app.services.ingestion_service import attach_authorship, merge_knowledge_chunks
 from app.services.knowledge_schema import ALLOWED_ENTITY_TYPES
 
 
@@ -188,7 +188,83 @@ class KnowledgeExtractorTests(unittest.TestCase):
         knowledge = merge_knowledge_chunks(["first", "second"])
 
         self.assertEqual(len(knowledge["entities"]), 3)
-        self.assertEqual(knowledge["relationships"], [{"source": "e1", "type": "WORKED_ON", "target": "e2"}])
+        self.assertEqual(
+            knowledge["relationships"],
+            [{
+                "source": _stable_entity_id("Person", "Ada"),
+                "type": "WORKED_ON",
+                "target": _stable_entity_id("Project", "Compiler"),
+            }],
+        )
+        self.assertEqual(
+            [entity["id"] for entity in knowledge["entities"]],
+            [
+                _stable_entity_id("Person", "Ada"),
+                _stable_entity_id("Project", "Compiler"),
+                _stable_entity_id("Technology", "Python"),
+            ],
+        )
+
+    @patch("app.services.ingestion_service.extract_knowledge")
+    def test_same_position_different_entities_do_not_collide(self, mock_extract):
+        mock_extract.side_effect = [
+            {"entities": [{"id": "e1", "type": "Project", "name": "RAG Project"}], "relationships": []},
+            {"entities": [{"id": "e1", "type": "Project", "name": "Pose Detection"}], "relationships": []},
+        ]
+
+        knowledge = merge_knowledge_chunks(["rag", "pose"])
+
+        self.assertEqual(
+            [entity["id"] for entity in knowledge["entities"]],
+            [
+                _stable_entity_id("Project", "RAG Project"),
+                _stable_entity_id("Project", "Pose Detection"),
+            ],
+        )
+
+    def test_attach_authorship_adds_stable_person_project_edge(self):
+        knowledge = attach_authorship(
+            {"entities": [], "relationships": []},
+            "Thasshien",
+            "RAG",
+        )
+
+        self.assertEqual(
+            knowledge["relationships"],
+            [{
+                "source": _stable_entity_id("Person", "Thasshien"),
+                "type": "WORKED_ON",
+                "target": _stable_entity_id("Project", "RAG"),
+            }],
+        )
+
+    def test_rejects_worked_on_from_meeting(self):
+        with patch(
+            "app.services.knowledge_extractor.generate_json",
+            return_value=(
+                '{"entities": ['
+                '{"id":"e1","type":"Meeting","name":"Setup"},'
+                '{"id":"e2","type":"Project","name":"RAG Project"}],'
+                '"relationships":[{"source":"e1","type":"WORKED_ON","target":"e2"}]}'
+            ),
+        ):
+            knowledge = extract_knowledge("Setup worked on the RAG Project.")
+
+        self.assertEqual(knowledge["relationships"], [])
+
+    def test_rejects_implemented_by_technology(self):
+        with patch(
+            "app.services.knowledge_extractor.generate_json",
+            return_value=(
+                '{"entities": ['
+                '{"id":"e1","type":"Project","name":"RAG Project"},'
+                '{"id":"e2","type":"Technology","name":"SentenceTransformer"}],'
+                '"relationships":[{"source":"e1","type":"IMPLEMENTED_BY","target":"e2"}]}'
+            ),
+        ):
+            knowledge = extract_knowledge("RAG Project was implemented by SentenceTransformer.")
+
+        self.assertEqual(knowledge["relationships"], [])
 
 
 if __name__ == "__main__":

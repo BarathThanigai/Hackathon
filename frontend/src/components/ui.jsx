@@ -33,11 +33,12 @@ export function PrimaryButton({ children, onClick, className = '', type = 'butto
   );
 }
 
-export function GhostButton({ children, onClick, className = '' }) {
+export function GhostButton({ children, onClick, className = '', disabled = false }) {
   return (
     <button
       onClick={onClick}
-      className={`flex h-11 items-center justify-center gap-2 rounded-lg border border-line-2 bg-panel px-5 text-sm font-medium text-fg transition-all duration-200 hover:border-teal/50 hover:bg-panel-2 active:scale-[0.98] ${className}`}
+      disabled={disabled}
+      className={`flex h-11 items-center justify-center gap-2 rounded-lg border border-line-2 bg-panel px-5 text-sm font-medium text-fg transition-all duration-200 hover:border-teal/50 hover:bg-panel-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
     >
       {children}
     </button>

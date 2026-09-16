@@ -47,6 +47,7 @@ def _generate_completion(
         return _generate_ollama_completion(
             messages, response_format=response_format, max_tokens=max_tokens,
             extraction_request=extraction_request,
+            disable_thinking=disable_thinking,
         )
 
     if provider != "nvidia":
@@ -127,7 +128,7 @@ def _generate_completion(
 
 def _generate_ollama_completion(
     messages: list[dict], *, response_format: dict | None, max_tokens: int,
-    extraction_request: bool,
+    extraction_request: bool, disable_thinking: bool,
 ) -> str:
     """Call Ollama's native local API (not its optional OpenAI compatibility API)."""
     payload = {
@@ -136,6 +137,8 @@ def _generate_ollama_completion(
         "stream": False,
         "options": {"temperature": 0, "num_predict": max_tokens},
     }
+    if disable_thinking:
+        payload["think"] = False
     if response_format:
         payload["format"] = "json"
 
@@ -170,7 +173,7 @@ def _generate_ollama_completion(
 
 
 def generate_text(prompt: str) -> str:
-    return _generate_completion(prompt)
+    return _generate_completion(prompt, disable_thinking=True)
 
 
 def generate_json(prompt: str) -> str:

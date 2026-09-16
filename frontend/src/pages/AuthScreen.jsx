@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import AbstractConnection from './AbstractConnection';
-import { Logo, PrimaryButton, GhostButton, Field, Divider, GoogleIcon } from './ui';
+import AbstractConnection from '../components/AbstractConnection';
+import { Logo, PrimaryButton, GhostButton, Field, Divider, GoogleIcon } from '../components/ui';
 
 function strength(pw) {
   let score = 0;
@@ -27,12 +27,30 @@ export default function AuthScreen({ mode, onSwitch, onSuccess }) {
   const [confirm, setConfirm] = useState('');
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleStep, setGoogleStep] = useState(false); // toggles the mini email picker
+  const [googleEmail, setGoogleEmail] = useState('');
+
+const startGoogle = () => {
+  setGoogleStep(true);
+};
+
+const confirmGoogle = () => {
+  if (!googleEmail.trim()) return;
+  setGoogleLoading(true);
+  setTimeout(onSuccess, 700);
+};
 
   const s = useMemo(() => strength(pw), [pw]);
 
   const submit = () => {
     setLoading(true);
     setTimeout(onSuccess, 1100);
+  };
+
+  const submitGoogle = () => {
+    setGoogleLoading(true);
+    setTimeout(onSuccess, 900);
   };
 
   return (
@@ -63,8 +81,13 @@ export default function AuthScreen({ mode, onSwitch, onSuccess }) {
           {isLogin && (
             <>
               <div className="mt-7">
-                <GhostButton className="w-full gap-2.5">
-                  <GoogleIcon /> Continue with Google
+                <GhostButton className="w-full gap-2.5" onClick={submitGoogle} disabled={googleLoading}>
+                  {googleLoading ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-fg/30 border-t-fg" />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  {googleLoading ? 'Connecting…' : 'Continue with Google'}
                 </GhostButton>
               </div>
 

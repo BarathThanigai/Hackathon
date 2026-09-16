@@ -20,6 +20,7 @@ def search_graph(entity_name: str):
         labels(n) AS entity_labels,
         properties(n) AS entity,
         type(r) AS relationship,
+        properties(r) AS relationship_properties,
         labels(connected) AS connected_labels,
         properties(connected) AS connected_entity
     """
@@ -37,6 +38,7 @@ def search_graph(entity_name: str):
                 "entity_labels": record["entity_labels"],
                 "entity": record["entity"],
                 "relationship": record["relationship"],
+                "relationship_properties": record["relationship_properties"] or {},
                 "connected_labels": record["connected_labels"],
                 "connected_entity": record["connected_entity"]
             })
@@ -57,6 +59,7 @@ def search_graph_by_id(entity_id: str, limit: int = 200):
         labels(n) AS entity_labels,
         properties(n) AS entity,
         type(r) AS relationship,
+        properties(r) AS relationship_properties,
         labels(connected) AS connected_labels,
         properties(connected) AS connected_entity
     LIMIT $limit
@@ -76,6 +79,7 @@ def search_graph_by_id(entity_id: str, limit: int = 200):
                 "entity_labels": record["entity_labels"],
                 "entity": record["entity"],
                 "relationship": record["relationship"],
+                "relationship_properties": record["relationship_properties"] or {},
                 "connected_labels": record["connected_labels"],
                 "connected_entity": record["connected_entity"]
             })

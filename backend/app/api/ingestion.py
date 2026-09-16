@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 
 from app.services.ingestion_service import ingest_document
@@ -33,12 +33,16 @@ SUPPORTED_EXTENSIONS = {
 
 class RepositoryRequest(BaseModel):
     url: str
+    project_id: str = "all"
+    project_name: str = "All workspace"
 
 
 @router.post("/document")
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    project_id: str = Form("all"),
+    project_name: str = Form("All workspace"),
 ):
 
     extension = Path(file.filename).suffix.lower()
@@ -69,14 +73,22 @@ async def upload_document(
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        create_job(document_id, file.filename, kind="document")
+        create_job(
+            document_id,
+            file.filename,
+            kind="document",
+            project_id=project_id,
+            project_name=project_name,
+        )
         background_tasks.add_task(
-            _process_document, document_id, file_path, file.filename
+            _process_document, document_id, file_path, file.filename, project_id, project_name
         )
         return {
             "status": "processing",
             "document_id": document_id,
             "filename": file.filename,
+            "project_id": project_id,
+            "project_name": project_name,
             "file_type": extension,
             "checkpoint": "uploaded",
             "checkpoints": ["Uploaded"],
@@ -107,13 +119,15 @@ def get_document_ingestion_status(document_id: str):
 def ingest_repository(request: RepositoryRequest, background_tasks: BackgroundTasks):
     repo_name = _repository_name_from_url(request.url)
     job_id = str(uuid4())
-    create_job(job_id, repo_name, kind="repository")
-    background_tasks.add_task(_process_repository, job_id, repo_name)
+    create_job(job_id, repo_name, kind="repository", project_id=request.project_id, project_name=request.project_name)
+    background_tasks.add_task(_process_repository, job_id, repo_name, request.project_id, request.project_name)
     return {
         "status": "processing",
         "document_id": job_id,
         "filename": repo_name,
         "kind": "repository",
+        "project_id": request.project_id,
+        "project_name": request.project_name,
         "checkpoint": "queued",
         "checkpoints": ["Repository queued"],
     }
@@ -129,7 +143,7 @@ def _repository_name_from_url(url: str) -> str:
     return f"{parts[0]}/{parts[1].removesuffix('.git')}"
 
 
-def _process_document(document_id: str, file_path: Path, filename: str) -> None:
+def _process_document(document_id: str, file_path: Path, filename: str, project_id: str, project_name: str) -> None:
     def checkpoint(name: str, label: str, **details) -> None:
         update_job(document_id, name, label, **details)
 
@@ -138,6 +152,8 @@ def _process_document(document_id: str, file_path: Path, filename: str) -> None:
             file_path=str(file_path),
             document_id=document_id,
             filename=filename,
+            project_id=project_id,
+            project_name=project_name,
             checkpoint=checkpoint,
         )
         finish_job(document_id, result)
@@ -149,12 +165,17 @@ def _process_document(document_id: str, file_path: Path, filename: str) -> None:
             file_path.unlink()
 
 
-def _process_repository(job_id: str, repo_name: str) -> None:
+def _process_repository(job_id: str, repo_name: str, project_id: str, project_name: str) -> None:
     def checkpoint(name: str, label: str, **details) -> None:
         update_job(job_id, name, label, **details)
 
     try:
-        result = ingest_github_repository(repo_name, checkpoint=checkpoint)
+        result = ingest_github_repository(
+            repo_name,
+            checkpoint=checkpoint,
+            project_id=project_id,
+            project_name=project_name,
+        )
         finish_job(job_id, result)
     except Exception as exc:
         import traceback

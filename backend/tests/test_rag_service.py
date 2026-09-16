@@ -59,8 +59,8 @@ class RagServiceTests(unittest.TestCase):
             {
                 "entity_labels": ["Technology"],
                 "entity": {"id": "redis", "name": "Redis"},
-                "relationship": "USED_BY",
-                "connected_labels": ["Service"],
+                "relationship": "PROPOSED",
+                "connected_labels": ["Project"],
                 "connected_entity": {"id": "auth", "name": "Authentication Service"},
             }
         ]
@@ -68,7 +68,7 @@ class RagServiceTests(unittest.TestCase):
         result = answer_query("Why was Redis introduced?")
 
         self.assertEqual(len(result["evidence"]), 1)
-        self.assertEqual(result["timeline"][0]["label"], "Redis used by Authentication Service")
+        self.assertEqual(result["timeline"][0]["label"], "Redis proposed Authentication Service")
         self.assertEqual(result["related"]["technologies"], ["Redis"])
 
     @patch("app.services.rag.retrieve_documents", return_value=[])
@@ -138,3 +138,20 @@ class RagServiceTests(unittest.TestCase):
         )
         self.assertEqual(result["related"]["people"], ["Rahul"])
         self.assertEqual(result["related"]["technologies"], ["Redis", "PostgreSQL"])
+
+    @patch("app.services.rag.search_graph_by_id", return_value=[])
+    @patch("app.services.rag.generate_text")
+    @patch("app.services.rag.retrieve_documents")
+    def test_retries_when_model_returns_reasoning_dump(self, mock_retrieve, mock_generate, _mock_graph):
+        mock_retrieve.return_value = [{
+            "id": "source-1",
+            "text": "Rahul proposed Redis for the authentication service.",
+            "metadata": {"filename": "decision.md"},
+        }]
+        reasoning_dump = "Here's a thinking process:\n" + ("1. **Analyze the evidence** and inspect the context. " * 80)
+        mock_generate.side_effect = [reasoning_dump, "Rahul proposed Redis."]
+
+        result = answer_query("Who proposed Redis?")
+
+        self.assertEqual(result["answer"], "Rahul proposed Redis.")
+        self.assertEqual(mock_generate.call_count, 2)

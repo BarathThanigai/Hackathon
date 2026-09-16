@@ -1,7 +1,8 @@
-from app.services.github_service import github
-from app.services.knowledge_extractor import extract_knowledge
+from app.services.github_service import get_latest_commit_details, github
+from app.services.knowledge_extractor import extract_knowledge, strip_relationship_types
 from app.services.graph import store_knowledge
 from app.database.chroma import add_chunks
+from app.services.ingestion_service import attach_authorship
 
 
 # Files worth ingesting into organizational memory.
@@ -109,6 +110,8 @@ def ingest_github_file(
     file_path: str,
     checkpoint=None,
     repo=None,
+    project_id: str = "all",
+    project_name: str = "All workspace",
 ):
     """
     Ingest one GitHub file.
@@ -134,6 +137,7 @@ def ingest_github_file(
         "utf-8",
         errors="ignore"
     )
+    commit_details = get_latest_commit_details(repo, file_path)
 
     chunks = _chunk_text(text)
 
@@ -174,6 +178,18 @@ def ingest_github_file(
         # --------------------------------
 
         knowledge = extract_knowledge(chunk)
+        knowledge = strip_relationship_types(knowledge, {"WORKED_ON"})
+        commit_time = commit_details.get("commit_time")
+        if commit_time:
+            for relationship in knowledge.get("relationships", []):
+                relationship.setdefault("timestamp", commit_time)
+        if commit_details.get("commit_author"):
+            knowledge = attach_authorship(
+                knowledge,
+                commit_details["commit_author"],
+                project_name,
+                commit_time=commit_time,
+            )
 
         all_knowledge["entities"].extend(
             knowledge.get("entities", [])
@@ -219,6 +235,9 @@ def ingest_github_file(
             extra_metadata={
                 "repo": repo_name,
                 "file": file_path,
+                "project_id": project_id,
+                "project_name": project_name,
+                **commit_details,
             },
         )
         total_vector_chunks += vector_result["vector_chunks"]
@@ -241,6 +260,8 @@ def ingest_github_file(
 def ingest_github_repository(
     repo_name: str,
     checkpoint=None,
+    project_id: str = "all",
+    project_name: str = "All workspace",
 ):
     """
     Ingest all useful files from a GitHub repository.
@@ -326,6 +347,8 @@ def ingest_github_repository(
                 file_path,
                 checkpoint=checkpoint,
                 repo=repo,
+                project_id=project_id,
+                project_name=project_name,
             )
 
             results.append(result)

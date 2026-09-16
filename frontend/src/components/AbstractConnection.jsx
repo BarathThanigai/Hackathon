@@ -232,9 +232,9 @@ export default function AbstractConnection() {
                 stroke={isPerson ? '#2dd4bf' : 'rgba(148,163,184,0.35)'}
                 strokeWidth={isPerson ? 1.5 : 1}
               />
-              <g fill="none" stroke={isPerson ? '#5eead4' : '#78d6e5'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                {node.icon(isPerson ? '#5eead4' : '#9fe7f5')}
-              </g>
+              <g fill="none" stroke={isPerson ? '#5eead4' : '#78d6e5'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" transform="translate(-12, -12)">
+              {node.icon(isPerson ? '#5eead4' : '#9fe7f5')}
+            </g>
               <text
                 y={isPerson ? 48 : 40}
                 textAnchor="middle"
