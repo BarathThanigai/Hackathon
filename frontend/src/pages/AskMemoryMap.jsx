@@ -29,7 +29,7 @@ export default function AskMemoryMap() {
     if (!trimmed) return;
     setQuestion(trimmed);
     setStatus('loading');
-    askQuestion(trimmed, project.id)
+    askQuestion(trimmed, project)
       .then((res) => {
         setAnswer(res);
         setStatus('answered');

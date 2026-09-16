@@ -5,6 +5,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import IngestionDiagram from '../components/graph/IngestionDiagram';
 import { useSourceIngestion } from '../context/SourceIngestionContext';
+import { useProject } from '../context/ProjectContext';
 import { uploadSource, connectRepository, fetchIngestionStatus } from '../services/api';
 import './Sources.css';
 
@@ -23,6 +24,7 @@ export default function Sources() {
   const [repoError, setRepoError] = useState('');
   const fileInputRef = useRef(null);
   const pollingIdsRef = useRef(new Set());
+  const { project } = useProject();
 
   useEffect(() => {
     initializeSources();
@@ -35,12 +37,12 @@ export default function Sources() {
         id: `temp-${crypto.randomUUID()}`,
         name: file.name,
         kind: 'document',
-        status: 'processing',
+        status: 'uploading',
         steps: ['Uploaded'],
       };
       addSource(placeholder);
       try {
-        const completedSource = await uploadSource(file);
+        const completedSource = await uploadSource(file, project);
         replaceSource(placeholder.id, completedSource);
         pollIngestion(completedSource.id);
       } catch (error) {
@@ -89,7 +91,7 @@ export default function Sources() {
     setConnecting(true);
     setRepoError('');
     try {
-      const source = await connectRepository(repoUrl.trim());
+      const source = await connectRepository(repoUrl.trim(), project);
       addSource(source);
       pollIngestion(source.id);
       setConnected(true);
@@ -108,6 +110,7 @@ export default function Sources() {
       subtitle="Everything MemoryMap has read, indexed, and connected into your organizational graph."
       actions={<Button onClick={() => fileInputRef.current?.click()}>+ Add Knowledge</Button>}
     >
+      <div className="ask-project-context mono">CONTEXT: {project.name}</div>
       <input
         ref={fileInputRef}
         type="file"

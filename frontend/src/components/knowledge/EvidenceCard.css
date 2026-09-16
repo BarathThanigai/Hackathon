@@ -40,6 +40,12 @@
   margin-top: 2px;
 }
 
+.evidence-card-commit {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
 .evidence-card-excerpt {
   margin: 12px 0 0 30px;
   font-size: var(--text-sm);

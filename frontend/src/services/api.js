@@ -56,11 +56,13 @@ function normaliseQueryResponse(question, payload) {
   };
 }
 
-export async function askQuestion(question, projectId = 'all') {
+export async function askQuestion(question, project) {
+  const projectId = typeof project === 'string' ? project : project?.id || 'all';
+  const projectName = typeof project === 'object' ? project.name : undefined;
   const res = await fetch(`${BASE_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, project_id: projectId }),
+    body: JSON.stringify({ question, project_id: projectId, project_name: projectName }),
   });
   if (!res.ok) throw new Error('Query failed');
   return normaliseQueryResponse(question, await res.json());
@@ -117,9 +119,11 @@ export async function fetchSources() {
   return sources;
 }
 
-export async function uploadSource(file) {
+export async function uploadSource(file, project) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('project_id', project?.id || 'all');
+  formData.append('project_name', project?.name || 'All workspace');
   const res = await fetch(`${BASE_URL}/api/ingestion/document`, { method: 'POST', body: formData });
   if (!res.ok) throw new Error((await res.json()).detail || 'Document upload failed');
   const payload = await res.json();
@@ -127,6 +131,8 @@ export async function uploadSource(file) {
     id: payload.document_id,
     name: payload.filename,
     kind: 'document',
+    projectId: payload.project_id,
+    projectName: payload.project_name,
     status: payload.status,
     steps: payload.checkpoints,
     checkpoint: payload.checkpoint,
@@ -154,11 +160,15 @@ export async function fetchIngestionStatus(documentId) {
   };
 }
 
-export async function connectRepository(url) {
+export async function connectRepository(url, project) {
   const res = await fetch(`${BASE_URL}/api/ingestion/repository`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({
+      url,
+      project_id: project?.id || 'all',
+      project_name: project?.name || 'All workspace',
+    }),
   });
   const payload = await res.json();
   if (!res.ok) throw new Error(payload.detail || 'Repository ingestion could not start');
@@ -166,6 +176,8 @@ export async function connectRepository(url) {
     id: payload.document_id,
     name: payload.filename,
     kind: payload.kind || 'repository',
+    projectId: payload.project_id,
+    projectName: payload.project_name,
     status: payload.status,
     steps: payload.checkpoints,
     checkpoint: payload.checkpoint,
