@@ -1,6 +1,10 @@
-# MemoryMap
+# MemoryMap: Never Lose the Why
 
 MemoryMap is an AI-powered organizational memory platform. It turns documents and GitHub repositories into searchable evidence and a knowledge graph of people, projects, technologies, decisions, meetings, and relationships.
+
+## Never Lose the Why
+
+The most valuable knowledge in an organization is not only what changed, but why it changed. Decisions lose their context when meeting notes, code, discussions, and the people behind them are scattered across different systems. MemoryMap preserves that reasoning by connecting each decision to its supporting evidence, related entities, contributors, relationships, and timeline. This lets teams recover the intent behind past work instead of repeating old investigations or making decisions without the context that informed them.
 
 ## Stack
 
