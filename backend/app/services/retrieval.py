@@ -1,7 +1,7 @@
 from app.database.chroma import search_chunks
 
 
-def retrieve_documents(query: str, n_results: int = 5):
+def retrieve_documents(query: str, n_results: int = 5, project_id: str = "all"):
     """
     Retrieve semantically relevant document chunks
     from ChromaDB.
@@ -9,7 +9,8 @@ def retrieve_documents(query: str, n_results: int = 5):
 
     results = search_chunks(
         query=query,
-        n_results=n_results
+        n_results=n_results,
+        project_id=project_id,
     )
 
     documents = results.get("documents", [[]])[0]

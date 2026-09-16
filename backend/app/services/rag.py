@@ -35,7 +35,18 @@ TIMELINE_RELATIONSHIPS = {
     "IMPLEMENTED_BY",
     "CAUSED_BY",
     "ATTENDED",
+    "WORKED_ON",
 }
+REASONING_MARKERS = (
+    "here's a thinking process",
+    "here is a thinking process",
+    "let's think",
+    "let me check",
+    "i need to look",
+    "let's re-read",
+    "wait, let's",
+    "let's examine",
+)
 
 
 def extract_entity_ids(documents: list[dict]) -> list[str]:
@@ -197,9 +208,9 @@ def _filter_relevant_graph_records(records: list[dict], query: str, documents: l
     ]
 
 
-def build_context(query: str, n_results: int = MAX_DOCUMENTS) -> tuple[str, list[dict], list[dict]]:
+def build_context(query: str, n_results: int = MAX_DOCUMENTS, project_id: str = "all") -> tuple[str, list[dict], list[dict]]:
     limit = max(1, min(n_results, MAX_DOCUMENTS))
-    documents = retrieve_documents(query, n_results=limit * 2)
+    documents = retrieve_documents(query, n_results=limit * 2, project_id=project_id)
     documents = _relevant_documents(documents)
     documents = _lexically_relevant(documents, query)
     documents = _deduplicate_by_source(documents)
@@ -278,6 +289,8 @@ def _evidence(documents: list[dict], query: str) -> list[dict]:
             ),
             "excerpt": excerpt,
             "citation": f"Lines {line_start}-{line_end}",
+            "commit_author": metadata.get("commit_author"),
+            "commit_time": metadata.get("commit_time"),
         })
     return evidence
 
@@ -297,8 +310,17 @@ def _is_generic_entity(entity: dict, labels=None) -> bool:
     return not entity or not any(entity_type in SUBSTANTIVE_ENTITY_TYPES for entity_type in _entity_types(entity, labels))
 
 
+def _format_timeline_date(timestamp) -> str | None:
+    if not timestamp:
+        return None
+    try:
+        return datetime.fromisoformat(str(timestamp).replace("Z", "+00:00")).strftime("%d %b %Y")
+    except ValueError:
+        return None
+
+
 def _timeline(graph_records: list[dict]) -> list[dict]:
-    """Build factual context steps from stored graph relationships."""
+    """Build timeline steps, ordered by stored relationship timestamps."""
     steps = []
     seen = set()
     for record in graph_records:
@@ -316,10 +338,16 @@ def _timeline(graph_records: list[dict]) -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
+        timestamp = (record.get("relationship_properties") or {}).get("timestamp")
+        label = f"{names[0]} {relationship.replace('_', ' ').lower()} {names[1]}"
+        date_label = _format_timeline_date(timestamp)
         steps.append({
-            "label": f"{names[0]} {relationship.replace('_', ' ').lower()} {names[1]}",
+            "label": f"{label} ({date_label})" if date_label else label,
+            "timestamp": timestamp,
         })
-    return steps
+    dated = sorted((step for step in steps if step["timestamp"]), key=lambda step: step["timestamp"])
+    undated = [step for step in steps if not step["timestamp"]]
+    return [{"label": step["label"]} for step in dated + undated]
 
 
 def _related(graph_records: list[dict]) -> dict[str, list[str]]:
@@ -345,12 +373,14 @@ def _related(graph_records: list[dict]) -> dict[str, list[str]]:
     return related
 
 
-def answer_query(query: str, n_results: int = MAX_DOCUMENTS) -> dict:
-    context, documents, graph_records = build_context(query, n_results=n_results)
+def answer_query(query: str, n_results: int = MAX_DOCUMENTS, project_id: str = "all", project_name: str | None = None) -> dict:
+    context, documents, graph_records = build_context(query, n_results=n_results, project_id=project_id)
     evidence = _evidence(documents, query)
     if not documents:
         return {
             "question": query,
+            "project_id": project_id,
+            "project_name": project_name,
             "answer": "I could not find relevant indexed knowledge for this question.",
             "evidenceBacked": False,
             "evidence": [],
@@ -379,6 +409,8 @@ ANSWER:"""
         answer = "I could not produce a grounded answer from the indexed evidence."
     return {
         "question": query,
+        "project_id": project_id,
+        "project_name": project_name,
         "answer": answer,
         "evidenceBacked": True,
         "evidence": evidence,
@@ -400,12 +432,20 @@ def _is_similarity_score(answer: str) -> bool:
         return False
 
 
+def _looks_like_reasoning_dump(answer: str) -> bool:
+    normalized = answer.strip().lower()
+    if len(normalized) > 500 and any(marker in normalized for marker in REASONING_MARKERS):
+        return True
+    return bool(re.search(r"\b\d+\.\s*\*\*", answer))
+
+
 def _is_invalid_answer(answer: str) -> bool:
     normalized = " ".join(answer.strip().lower().split())
     return (
         _is_similarity_score(answer)
         or normalized in {"here", "answer", "response", "n/a", "none"}
         or len(normalized.split()) < 3
+        or _looks_like_reasoning_dump(answer)
     )
 
 

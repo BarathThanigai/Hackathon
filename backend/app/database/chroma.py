@@ -67,9 +67,10 @@ def add_chunks(
 
 def search_chunks(
     query: str,
-    n_results: int = 5
+    n_results: int = 5,
+    project_id: str | None = None,
 ):
-    return collection.query(
-        query_texts=[query],
-        n_results=n_results
-    )
+    options = {"query_texts": [query], "n_results": n_results}
+    if project_id and project_id != "all":
+        options["where"] = {"project_id": project_id}
+    return collection.query(**options)

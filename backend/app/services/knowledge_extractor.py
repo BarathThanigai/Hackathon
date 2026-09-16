@@ -8,6 +8,7 @@ from app.services.knowledge_schema import (
     ALLOWED_ENTITY_TYPES,
     ALLOWED_RELATIONSHIP_TYPES,
     RELATIONSHIP_TYPE_ALIASES,
+    is_relationship_compatible,
 )
 
 
@@ -58,6 +59,15 @@ Rules:
 
 - Extract only explicitly mentioned entities.
 - Extract only relationships explicitly supported by the text.
+- Never invent a person, organization, project, or relationship that is not
+    explicitly present in the source text.
+- Tool names, package names, framework names, commands, and file names are
+    Technology or Document entities when they qualify; they must never be
+    labeled Person. For example, eslint, vite, npm, React, and package names
+    are not people.
+- Do not interpret a person's name from an example, URL, code comment, or
+    unrelated proper noun unless the source explicitly identifies that person
+    as an entity.
 - Reuse the same ID for the same entity within this extraction.
 - Every relationship source and target must reference an existing entity.
 - Do not invent entities or relationships.
@@ -257,6 +267,7 @@ def extract_knowledge(text: str) -> dict:
         )
 
     entity_ids = set()
+    entity_types = {}
 
     for entity in data["entities"]:
         if not isinstance(entity, dict):
@@ -299,6 +310,7 @@ def extract_knowledge(text: str) -> dict:
             )
 
         entity_ids.add(entity["id"])
+        entity_types[entity["id"]] = entity["type"]
 
     for relationship in data["relationships"]:
         if not isinstance(relationship, dict):
@@ -349,34 +361,24 @@ def extract_knowledge(text: str) -> dict:
                 f"{relationship['target']}"
             )
 
+        if not is_relationship_compatible(
+            relationship_type,
+            entity_types[relationship["source"]],
+            entity_types[relationship["target"]],
+        ):
+            logger.warning(
+                "Dropping relationship with incompatible endpoint types: %s (%s -> %s)",
+                relationship_type,
+                entity_types[relationship["source"]],
+                entity_types[relationship["target"]],
+            )
+            relationship["_invalid"] = True
+
+    data["relationships"] = [
+        relationship for relationship in data["relationships"]
+        if not relationship.get("_invalid")
+    ]
     return data
-
-# not in resin boy code
-def extract_knowledge(text: str) -> dict:
-    """
-    Extract knowledge from a single manageable text chunk.
-
-    This function intentionally handles only one chunk.
-    Larger documents should use extract_knowledge_from_chunks().
-    """
-    if not isinstance(text, str) or not text.strip():
-        return {
-            "entities": [],
-            "relationships": [],
-        }
-
-    prompt = EXTRACTION_PROMPT + "\n" + text
-
-    response = generate_json(prompt).strip()
-
-    print("\n========== RAW AI RESPONSE ==========")
-    print(response)
-    print("====================================\n")
-
-    data = extract_json_object(response)
-
-    return _validate_extraction(data)
-
 
 def _normalize_entity_name(name: str) -> str:
     """
@@ -413,6 +415,18 @@ def _stable_entity_id(entity_type: str, name: str) -> str:
     return f"entity_{digest}"
 
 
+def strip_relationship_types(knowledge: dict, types_to_remove: set[str]) -> dict:
+    """Remove relationships whose truth must come from structured metadata."""
+    return {
+        "entities": knowledge.get("entities", []),
+        "relationships": [
+            relationship
+            for relationship in knowledge.get("relationships", [])
+            if relationship.get("type") not in types_to_remove
+        ],
+    }
+
+
 def merge_knowledge(extractions: list[dict]) -> dict:
     """
     Merge multiple chunk-level extraction results.
@@ -422,7 +436,7 @@ def merge_knowledge(extractions: list[dict]) -> dict:
     """
 
     canonical_entities = {}
-    canonical_relationships = set()
+    canonical_relationships: dict[tuple[str, str, str], str | None] = {}
 
     for extraction in extractions:
         local_to_canonical = {}
@@ -478,26 +492,25 @@ def merge_knowledge(extractions: list[dict]) -> dict:
             if relationship_type not in ALLOWED_RELATIONSHIP_TYPES:
                 continue
 
-            canonical_relationships.add(
-                (
-                    source_id,
-                    relationship_type,
-                    target_id,
-                )
-            )
+            edge_key = (source_id, relationship_type, target_id)
+            timestamp = relationship.get("timestamp")
+            existing_timestamp = canonical_relationships.get(edge_key)
+            if edge_key not in canonical_relationships or (
+                timestamp
+                and (not existing_timestamp or timestamp < existing_timestamp)
+            ):
+                canonical_relationships[edge_key] = timestamp or existing_timestamp
 
-    relationships = [
-        {
+    relationships = []
+    for (source_id, relationship_type, target_id), timestamp in sorted(canonical_relationships.items()):
+        relationship = {
             "source": source_id,
             "type": relationship_type,
             "target": target_id,
         }
-        for (
-            source_id,
-            relationship_type,
-            target_id,
-        ) in sorted(canonical_relationships)
-    ]
+        if timestamp:
+            relationship["timestamp"] = timestamp
+        relationships.append(relationship)
 
     return {
         "entities": list(canonical_entities.values()),

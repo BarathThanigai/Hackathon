@@ -44,3 +44,20 @@ RELATIONSHIP_TYPE_ALIASES = {
     "OFFERS": "PROVIDES",
     "SUPPORTS": "PROVIDES",
 }
+
+
+# These are the relationships for which the endpoint types are meaningful
+# enough to validate. Other relationships remain intentionally flexible.
+RELATIONSHIP_TYPE_CONSTRAINTS = {
+    "IMPLEMENTED_BY": ({"Decision", "Project", "Service"}, {"PullRequest"}),
+    "WORKED_ON": ({"Person"}, {"Project"}),
+    "EARNED": ({"Person"}, {"Certification"}),
+    "ATTENDED": ({"Person"}, {"Event", "Meeting", "Institution"}),
+}
+
+
+def is_relationship_compatible(relationship_type: str, source_type: str, target_type: str) -> bool:
+    constraints = RELATIONSHIP_TYPE_CONSTRAINTS.get(relationship_type)
+    return constraints is None or (
+        source_type in constraints[0] and target_type in constraints[1]
+    )

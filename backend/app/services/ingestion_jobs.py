@@ -8,7 +8,7 @@ _jobs: dict[str, dict] = {}
 _jobs_lock = Lock()
 
 
-def create_job(job_id: str, filename: str, kind: str = "document") -> dict:
+def create_job(job_id: str, filename: str, kind: str = "document", **details) -> dict:
     initial_checkpoint = "uploaded" if kind == "document" else "queued"
     initial_label = "Uploaded" if kind == "document" else "Repository queued"
     job = {
@@ -20,6 +20,7 @@ def create_job(job_id: str, filename: str, kind: str = "document") -> dict:
         "checkpoints": [initial_label],
         "error": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        **details,
     }
     with _jobs_lock:
         _jobs[job_id] = job
